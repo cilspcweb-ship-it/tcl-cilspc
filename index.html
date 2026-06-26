@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transports en direct — Perrache · Confluence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bordeaux:#8B1A2C; --bordeaux2:#6d1522; --or:#C8A951; --or-light:#e8cc7a;
+  --creme:#FAF6EF; --creme2:#f0ebe0; --texte:#2c1810; --muted:#7a6a5a;
+  --border:#d4c4a8; --blanc:#fff;
+  --metro:#e05c00; --tram:#0070b8; --bus:#2e8b3a; --funi:#8b1a8b;
+  --radius:10px; --shadow:0 2px 12px rgba(139,26,44,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-serif;font-size:15px;min-height:100%}
+#header{background:var(--bordeaux);padding:18px 20px 14px;border-bottom:3px solid var(--or)}
+#header-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+#header h1{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--creme);line-height:1.2}
+#header h1 span{color:var(--or-light)}
+.live-badge{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(200,169,81,.4);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--or-light);font-weight:500;white-space:nowrap}
+.dot-live{width:7px;height:7px;border-radius:50%;background:#4ade80;animation:pulse 1.8s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+#maj-time{font-size:11px;color:rgba(250,246,239,.55);margin-top:2px}
+
+/* ONGLETS NAVIGATION */
+#nav{display:flex;gap:0;background:var(--creme);border-bottom:2px solid var(--border)}
+.nav-tab{padding:10px 18px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;display:flex;align-items:center;gap:6px}
+.nav-tab.active{color:var(--bordeaux);border-bottom-color:var(--bordeaux);font-weight:600}
+.nav-tab:hover{color:var(--bordeaux)}
+.nav-tab .badge-count{background:var(--bordeaux);color:#fff;border-radius:20px;padding:1px 7px;font-size:10px;font-weight:700}
+
+/* FILTRES TRANSPORT */
+#filtres{display:flex;gap:6px;flex-wrap:wrap;padding:12px 20px 10px;background:var(--creme);border-bottom:1px solid var(--border)}
+.filtre-btn{padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--blanc);color:var(--muted);font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .2s}
+.filtre-btn.active{background:var(--bordeaux);border-color:var(--bordeaux);color:var(--creme)}
+
+/* PANNEAUX */
+.panel{display:none}
+.panel.active{display:block}
+
+/* GRILLE PASSAGES */
+#grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;padding:20px}
+.arret-card{background:var(--blanc);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;transition:box-shadow .2s}
+.arret-card:hover{box-shadow:0 4px 20px rgba(139,26,44,.14)}
+.arret-header{background:var(--bordeaux2);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.arret-nom{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:700;color:var(--creme)}
+.arret-lignes{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.ligne-chip{padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;color:#fff;line-height:1.4}
+.passage-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--creme2)}
+.passage-row:last-child{border-bottom:none}
+.passage-row:hover{background:var(--creme)}
+.p-badge{padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;color:#fff;min-width:36px;text-align:center;flex-shrink:0}
+.p-dest{flex:1;font-size:13px;color:var(--texte);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-time{font-size:14px;font-weight:600;color:var(--bordeaux);flex-shrink:0;min-width:54px;text-align:right}
+.p-time.now{color:#c0392b;font-weight:700}
+.p-time.soon{color:#e07000}
+
+/* ÉTAT */
+#etat{margin:20px;padding:16px 20px;border-radius:var(--radius);font-size:14px;display:none}
+#etat.err{background:#fff3f3;border:1px solid #f5c6cb;border-left:4px solid var(--bordeaux);color:var(--bordeaux2)}
+#etat.load{background:var(--creme2);color:var(--muted);text-align:center}
+#etat.vide{background:var(--creme2);color:var(--muted);text-align:center;border-left:4px solid var(--or)}
+
+/* PERTURBATIONS */
+#perturbations{padding:16px 20px}
+.alerte-card{background:var(--blanc);border:1px solid var(--border);border-left:4px solid var(--muted);border-radius:8px;padding:11px 14px;margin-bottom:10px}
+.alerte-card.majeure{border-left-color:#c0392b;background:#fff5f4}
+.alerte-card.perturbation{border-left-color:#e07000;background:#fff9f0}
+.alerte-card.information{border-left-color:#0070b8;background:#f0f7fc}
+.alerte-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px}
+.alerte-type{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:20px;color:#fff}
+.alerte-type.majeure{background:#c0392b}
+.alerte-type.perturbation{background:#e07000}
+.alerte-type.information{background:#0070b8}
+.alerte-lignes{display:flex;gap:4px;flex-wrap:wrap}
+.alerte-ligne-badge{padding:1px 7px;border-radius:4px;font-size:11px;font-weight:700;color:#fff}
+.alerte-card-titre{font-size:14px;font-weight:600;color:var(--texte);margin-bottom:3px}
+.alerte-card-msg{font-size:12.5px;color:var(--muted);line-height:1.5}
+.alerte-toggle{color:var(--bordeaux);cursor:pointer;font-weight:600;font-size:12px;background:none;border:none;padding:0;margin-top:3px}
+#perturb-vide{padding:30px;text-align:center;color:var(--muted);font-style:italic}
+
+#footer{text-align:center;padding:14px 20px 20px;font-size:12px;color:var(--muted);border-top:1px solid var(--border);margin-top:18px}
+#footer a{color:var(--bordeaux);text-decoration:none;font-weight:500}
+#footer a:hover{text-decoration:underline}
+/* RESPONSIVE */
+/* Mobile < 480px : 1 colonne */
+@media(max-width:480px){
+  #grille{grid-template-columns:1fr;padding:12px;gap:10px}
+  #header{padding:12px 14px 10px}
+  #header h1{font-size:18px}
+  .nav-tab{padding:8px 12px;font-size:12px}
+  #filtres{padding:10px 12px 8px;gap:5px}
+  .filtre-btn{padding:3px 10px;font-size:11px}
+  #perturbations{padding:12px}
+  #etat{margin:12px}
+}
+/* Tablette 481-768px : 2 colonnes */
+@media(min-width:481px) and (max-width:768px){
+  #grille{grid-template-columns:repeat(2,1fr);padding:14px;gap:12px}
+}
+/* Desktop 769-1200px : 3 colonnes */
+@media(min-width:769px) and (max-width:1200px){
+  #grille{grid-template-columns:repeat(3,1fr)}
+}
+/* Large desktop > 1200px : 4 colonnes max */
+@media(min-width:1201px){
+  #grille{grid-template-columns:repeat(4,1fr);max-width:1400px;margin:0 auto}
+  #perturbations{max-width:1400px;margin:0 auto}
+}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div id="header-top">
+    <h1>🚇 Transports en direct<br><span>Perrache · Confluence</span></h1>
+    <div class="live-badge"><div class="dot-live"></div>TEMPS RÉEL</div>
+  </div>
+  <div id="maj-time">Chargement des données TCL…</div>
+</div>
+
+<div id="nav">
+  <button class="nav-tab active" onclick="setOnglet('passages',this)">🚏 Passages</button>
+  <button class="nav-tab" onclick="setOnglet('perturbations',this)">⚠️ Info trafic <span class="badge-count" id="badge-perturb" style="display:none">0</span></button>
+</div>
+
+<!-- ONGLET PASSAGES -->
+<div id="panel-passages" class="panel active">
+  <div id="filtres">
+    <button class="filtre-btn active" onclick="setFiltre(this,'tous')">Tous</button>
+    <button class="filtre-btn" onclick="setFiltre(this,'metro')">Métro</button>
+    <button class="filtre-btn" onclick="setFiltre(this,'tram')">Tram</button>
+    <button class="filtre-btn" onclick="setFiltre(this,'bus')">Bus</button>
+  </div>
+  <div id="etat" class="load">Chargement des prochains passages…</div>
+  <div id="grille"></div>
+</div>
+
+<!-- ONGLET PERTURBATIONS -->
+<div id="panel-perturbations" class="panel">
+  <div id="perturbations"></div>
+  <div id="perturb-vide" style="display:none">✅ Aucune perturbation en cours</div>
+</div>
+
+<div id="footer">
+  Données : <a href="https://data.grandlyon.com" target="_blank" rel="noopener noreferrer">Grand Lyon Data</a>
+  · Réseau <a href="https://www.tcl.fr" target="_blank" rel="noopener noreferrer">TCL</a>
+  · <a href="https://www.tcl.fr/se-deplacer/info-trafic" target="_blank" rel="noopener noreferrer">Info trafic tcl.fr</a>
+  · Actualisation toutes les 30 s
+</div>
+
+<script>
+const COULEURS={metro:"#e05c00",tram:"#0070b8",bus:"#2e8b3a",funi:"#8b1a8b"};
+const ORDRE=["Perrache","Confluence","Sainte-Blandine","Hôtel Région Montrochet","Musée des Confluences","Montrochet","Ampère - Victor Hugo","Charlemagne - C. Perier","Place des Archives","Claudius Collonge"];
+
+let filtreCourant="tous";
+let ongletCourant="passages";
+let donnees={};
+let alertes=[];
+
+window.addEventListener("load",()=>{ charger(); setInterval(charger,30000); });
+
+function setOnglet(id, btn){
+  ongletCourant=id;
+  document.querySelectorAll(".nav-tab").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+  document.getElementById("panel-"+id).classList.add("active");
+}
+
+async function charger(){
+  const etat=document.getElementById("etat");
+  try{
+    const r=await fetch("/.netlify/functions/tcl-passages");
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const d=await r.json();
+    if(d.error) throw new Error(d.error);
+    donnees=d.poles||{};
+    alertes=d.alertes||[];
+    afficher();
+    afficherPerturbations();
+    majTime(d.maj);
+    if(d.vide){
+      etat.className="vide"; etat.style.display="block";
+      etat.innerHTML="ℹ️ Aucun passage en cours — service TCL non actif à cette heure.";
+    } else {
+      etat.style.display="none";
+    }
+  }catch(e){
+    etat.className="err"; etat.style.display="block";
+    etat.innerHTML="<strong>⚠️ Données momentanément indisponibles</strong><br>Impossible de joindre l'API TCL. Nouvelle tentative dans 30 secondes.";
+    majTime(null,true);
+  }
+}
+
+function afficher(){
+  const grille=document.getElementById("grille");
+  grille.innerHTML="";
+  const poles=Object.keys(donnees).sort((a,b)=>{
+    const ia=ORDRE.indexOf(a), ib=ORDRE.indexOf(b);
+    return (ia<0?99:ia)-(ib<0?99:ib);
+  });
+  poles.forEach(nom=>{
+    let passages=donnees[nom]||[];
+    if(filtreCourant!=="tous") passages=passages.filter(p=>detecterType(p.ligne)===filtreCourant);
+    if(passages.length===0) return;
+    const lignes=[...new Set(passages.map(p=>p.ligne))];
+    const card=document.createElement("div");
+    card.className="arret-card";
+    card.innerHTML=`
+      <div class="arret-header">
+        <div class="arret-nom">🚏 ${nom}</div>
+        <div class="arret-lignes">
+          ${lignes.slice(0,6).map(l=>`<span class="ligne-chip" style="background:${COULEURS[detecterType(l)]||'#666'}">${l}</span>`).join("")}
+        </div>
+      </div>
+      <div class="passages">
+        ${passages.slice(0,6).map(p=>{
+          const t=detecterType(p.ligne);
+          const cls=p.delai<=0?"now":p.delai<=3?"soon":"";
+          const txt=p.delai<=0?"À quai":p.delai===1?"1 min":(p.delaiTexte&&/h/.test(p.delaiTexte)?p.delaiTexte:p.delai+" min");
+          return `<div class="passage-row">
+            <span class="p-badge" style="background:${COULEURS[t]||'#666'}">${p.ligne}</span>
+            <span class="p-dest">${p.direction||"?"}</span>
+            <span class="p-time ${cls}">${txt}</span>
+          </div>`;
+        }).join("")}
+      </div>`;
+    grille.appendChild(card);
+  });
+  if(grille.children.length===0)
+    grille.innerHTML=`<p style="padding:20px;color:var(--muted);text-align:center;font-style:italic;grid-column:1/-1">Aucun passage pour ce mode de transport.</p>`;
+}
+
+function setFiltre(btn,type){
+  filtreCourant=type;
+  document.querySelectorAll(".filtre-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  afficher();
+}
+
+function detecterType(l){
+  const u=String(l||"").toUpperCase().trim();
+  if(["A","B","C","D"].includes(u)) return "metro";
+  if(/^F\d/.test(u)) return "funi";
+  if(/^T\d/.test(u)||u==="T1/T2") return "tram";
+  return "bus";
+}
+
+function classeSeverite(type){
+  const t=String(type||"").toLowerCase();
+  if(t.includes("majeure")) return "majeure";
+  if(t.includes("perturbation")) return "perturbation";
+  return "information";
+}
+
+function afficherPerturbations(){
+  const zone=document.getElementById("perturbations");
+  const vide=document.getElementById("perturb-vide");
+  const badge=document.getElementById("badge-perturb");
+
+  if(!alertes.length){
+    zone.innerHTML="";
+    vide.style.display="block";
+    badge.style.display="none";
+    return;
+  }
+
+  vide.style.display="none";
+  badge.style.display="inline";
+  badge.textContent=alertes.length;
+
+  let html="";
+  alertes.forEach((a,i)=>{
+    const cls=classeSeverite(a.type);
+    const msg=a.message||"";
+    const court=msg.length>140?msg.slice(0,140)+"…":msg;
+    const lignes=(a.lignes||[]).map(l=>`<span class="alerte-ligne-badge" style="background:${COULEURS[detecterType(l)]||'#666'}">${l}</span>`).join("");
+    html+=`
+      <div class="alerte-card ${cls}">
+        <div class="alerte-head">
+          <span class="alerte-type ${cls}">${a.type||"Info"}</span>
+          <span class="alerte-lignes">${lignes}</span>
+        </div>
+        <div class="alerte-card-titre">${a.titre||""}</div>
+        <div class="alerte-card-msg" id="msg-${i}">${court}</div>
+        ${msg.length>140?`<button class="alerte-toggle" onclick="toggleMsg(${i})" data-full="0">Lire la suite →</button>`:""}
+      </div>`;
+  });
+  zone.innerHTML=html;
+}
+
+function toggleMsg(i){
+  const el=document.getElementById("msg-"+i);
+  const btn=el.parentElement.querySelector(".alerte-toggle");
+  const full=btn.dataset.full==="1";
+  el.textContent=full?(alertes[i].message.slice(0,140)+"…"):alertes[i].message;
+  btn.textContent=full?"Lire la suite →":"← Réduire";
+  btn.dataset.full=full?"0":"1";
+}
+
+function majTime(iso,err){
+  const el=document.getElementById("maj-time");
+  const h=new Date(iso||Date.now()).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  el.textContent=err?`Dernière tentative : ${h} — reconnexion…`:`Dernière mise à jour : ${h}`;
+}
+</script>
+</body>
+</html>
