@@ -1,5 +1,4 @@
-// Cloudflare Pages Function — port exact de tcl-passages-v8.js
-
+// Cloudflare Pages Function — /functions/tcl-passages.js
 const ARRETS = {
   "Perrache":                [33765,33767,33779,30459,32103,32102],
   "Confluence":              [17397,46179],
@@ -29,26 +28,33 @@ const LIGNES_VALIDES = {
 const ALL_IDS = new Set(Object.values(ARRETS).flat());
 
 function normaliserDirection(d) {
-  return String(d || "").trim().toUpperCase().replace(/\s+/g, " ").replace(/[.,;:'"\-]/g, "");
+  return String(d||"").trim().toUpperCase().replace(/\s+/g," ").replace(/[.,;:'"\-]/g,"");
 }
 
-function normaliserLigne(l) {
-  return String(l || "").trim().toUpperCase();
+function normaliserLigne(l) { 
+  return String(l||"").trim().toUpperCase(); 
 }
 
-const CORS = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+const CORS = { 
+  "Content-Type": "application/json", 
+  "Access-Control-Allow-Origin": "*" 
+};
 
 export async function onRequest(context) {
-  if (context.request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+  if (context.request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS });
+  }
+  
   try {
-    const auth = "Basic " + btoa("demo:demo4dev");
+    const auth = "Basic " + btoa(`${context.env.GRANDLYON_USER}:${context.env.GRANDLYON_PASS}`);
     const apiHeaders = { "Authorization": auth, "Accept": "application/json" };
 
     const resP = await fetch(
-      "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_sytral.tclpassagearret/all.json?maxfeatures=9300&start=1&srsname=WGS84",
+      "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_systral.tclpassagearret/all.json?maxfeatures=9300&start=1&srsname=WGS84",
       { headers: apiHeaders, signal: AbortSignal.timeout(25000) }
     );
-    if (resP.status === 401) throw new Error("Authentification refusee (401)");
+    
+    if (resP.status === 401) throw new Error("Authentification refusee");
     if (!resP.ok) throw new Error("HTTP " + resP.status);
 
     const bodyP = await resP.json();
@@ -59,10 +65,23 @@ export async function onRequest(context) {
     }
 
     const allPassages = [];
+    
+    // ✅ FILTRE SUR LES DEUX SENS (départ ET arrivée)
     for (const v of values) {
       const idDep = v.id;
-      if (!ALL_IDS.has(idDep)) continue;
-      const nomPole = Object.entries(ARRETS).find(([, ids]) => ids.includes(idDep))?.[0];
+      const idArr = v.idtarretdestination;
+      
+      let nomPole = null;
+      
+      // Cherche en départ
+      if (ALL_IDS.has(idDep)) {
+        nomPole = Object.entries(ARRETS).find(([, ids]) => ids.includes(idDep))?.[0];
+      } 
+      // Cherche en arrivée
+      else if (idArr && ALL_IDS.has(idArr)) {
+        nomPole = Object.entries(ARRETS).find(([, ids]) => ids.includes(idArr))?.[0];
+      }
+      
       if (!nomPole) continue;
 
       const ligne = normaliserLigne(v.ligne);
@@ -71,48 +90,45 @@ export async function onRequest(context) {
       const lignesAttendues = LIGNES_VALIDES[nomPole];
       if (lignesAttendues && lignesAttendues.length > 0 && !lignesAttendues.includes(ligne)) continue;
 
-      const directionBrute = String(v.direction || "").trim();
-      const direction = normaliserDirection(v.direction);
-      const delaiStr = String(v.delaipassage || "0");
+      const directionBrute = String(v.direction||"").trim();
+      const delaiStr = String(v.delaipassage||"0");
       let delai, delaiTexte;
+      
       if (delaiStr === "Proche" || delaiStr === "proche") {
         delai = 0; delaiTexte = "A quai";
       } else {
         delai = parseInt(delaiStr, 10) || 0;
         if (delai <= 0) delaiTexte = "A quai";
         else if (delai < 60) delaiTexte = delai + " min";
-        else { const h = Math.floor(delai/60), m = delai%60; delaiTexte = h+"h"+(m>0?String(m).padStart(2,"0"):""); }
+        else { 
+          const h = Math.floor(delai/60), m = delai%60; 
+          delaiTexte = h+"h"+(m>0?String(m).padStart(2,"0"):""); 
+        }
       }
-      allPassages.push({ nomPole, ligne, direction, directionBrute, delai, delaiTexte });
+      
+      allPassages.push({ nomPole, ligne, direction: directionBrute, delai, delaiTexte });
     }
 
-    allPassages.sort((a, b) => a.delai - b.delai);
+    allPassages.sort((a,b) => a.delai - b.delai);
 
     const poles = {};
-    const vusStrict = new Set();
-    const vusAQuaiParLigne = new Set();
+    const vus = new Set();
 
     for (const p of allPassages) {
-      const cleStricte = p.nomPole + "|" + p.ligne + "|" + p.direction;
-      if (vusStrict.has(cleStricte)) continue;
-
-      if (p.delai <= 0) {
-        const cleAQuai = p.nomPole + "|" + p.ligne;
-        if (vusAQuaiParLigne.has(cleAQuai)) continue;
-        vusAQuaiParLigne.add(cleAQuai);
-      }
-
-      vusStrict.add(cleStricte);
+      const cle = p.nomPole + "|" + p.ligne + "|" + p.direction;
+      if (vus.has(cle)) continue;
+      
+      vus.add(cle);
       if (!poles[p.nomPole]) poles[p.nomPole] = [];
-      poles[p.nomPole].push({ ligne: p.ligne, direction: p.directionBrute, delai: p.delai, delaiTexte: p.delaiTexte });
+      poles[p.nomPole].push({ ligne: p.ligne, direction: p.direction, delai: p.delai, delaiTexte: p.delaiTexte });
     }
 
-    for (const nom of Object.keys(poles)) poles[nom].sort((a, b) => a.delai - b.delai);
+    for (const nom of Object.keys(poles)) poles[nom].sort((a,b) => a.delai - b.delai);
 
     let alertes = [];
     try {
       const resA = await fetch(
-        "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_sytral.tclalertetrafic_2/all.json?maxfeatures=20&start=1&srsname=WGS84",
+        "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_systral.tclalertetrafic_2/all.json?maxfeatures=20&start=1&srsname=WGS84",
         { headers: apiHeaders, signal: AbortSignal.timeout(10000) }
       );
       if (resA.ok) {
