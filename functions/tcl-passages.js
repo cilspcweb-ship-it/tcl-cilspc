@@ -1,4 +1,4 @@
-// Cloudflare Pages Function — /functions/tcl-passages.js
+// Cloudflare Pages Function — /functions/tcl-passages.js v2
 // CORRECTION 26/06/2026 : IDs corriges, terminus A/T1/T2 forces
 
 const ARRETS = {
