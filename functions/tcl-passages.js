@@ -46,7 +46,15 @@ export async function onRequest(context) {
   }
   
   try {
-    const auth = "Basic " + btoa(`${context.env.GRANDLYON_USER}:${context.env.GRANDLYON_PASS}`);
+    // ✅ Utilise les SECRETS Cloudflare
+    const user = context.env.GRANDLYON_USER;
+    const pass = context.env.GRANDLYON_PASS;
+    
+    if (!user || !pass) {
+      throw new Error("Secrets Cloudflare non configurés - ajoute GRANDLYON_USER et GRANDLYON_PASS dans Settings");
+    }
+    
+    const auth = "Basic " + btoa(`${user}:${pass}`);
     const apiHeaders = { "Authorization": auth, "Accept": "application/json" };
 
     const resP = await fetch(
@@ -54,30 +62,37 @@ export async function onRequest(context) {
       { headers: apiHeaders, signal: AbortSignal.timeout(25000) }
     );
     
-    if (resP.status === 401) throw new Error("Authentification refusee");
-    if (!resP.ok) throw new Error("HTTP " + resP.status);
+    if (resP.status === 401) {
+      throw new Error("Authentification refusee - verifie tes identifiants GrandLyon");
+    }
+    if (!resP.ok) {
+      throw new Error("HTTP " + resP.status);
+    }
 
     const bodyP = await resP.json();
     const values = bodyP.values || [];
 
     if (values.length === 0) {
-      return new Response(JSON.stringify({ poles: {}, alertes: [], maj: new Date().toISOString(), vide: true }), { status: 200, headers: CORS });
+      return new Response(
+        JSON.stringify({ poles: {}, alertes: [], maj: new Date().toISOString(), vide: true }), 
+        { status: 200, headers: CORS }
+      );
     }
 
     const allPassages = [];
     
-    // ✅ FILTRE SUR LES DEUX SENS (départ ET arrivée)
+    // ✅ Filtre sur TOUS les passages qui concernent nos pôles
     for (const v of values) {
       const idDep = v.id;
       const idArr = v.idtarretdestination;
       
       let nomPole = null;
       
-      // Cherche en départ
+      // Cherche en départ (arrêt où on est)
       if (ALL_IDS.has(idDep)) {
         nomPole = Object.entries(ARRETS).find(([, ids]) => ids.includes(idDep))?.[0];
       } 
-      // Cherche en arrivée
+      // Cherche en arrivée (arrêt de destination)
       else if (idArr && ALL_IDS.has(idArr)) {
         nomPole = Object.entries(ARRETS).find(([, ids]) => ids.includes(idArr))?.[0];
       }
@@ -87,30 +102,45 @@ export async function onRequest(context) {
       const ligne = normaliserLigne(v.ligne);
       if (!ligne) continue;
 
+      // Filtre les lignes valides pour ce pôle
       const lignesAttendues = LIGNES_VALIDES[nomPole];
-      if (lignesAttendues && lignesAttendues.length > 0 && !lignesAttendues.includes(ligne)) continue;
+      if (lignesAttendues && lignesAttendues.length > 0 && !lignesAttendues.includes(ligne)) {
+        continue;
+      }
 
-      const directionBrute = String(v.direction||"").trim();
-      const delaiStr = String(v.delaipassage||"0");
+      const directionBrute = String(v.direction || "").trim();
+      const delaiStr = String(v.delaipassage || "0");
       let delai, delaiTexte;
       
       if (delaiStr === "Proche" || delaiStr === "proche") {
-        delai = 0; delaiTexte = "A quai";
+        delai = 0; 
+        delaiTexte = "A quai";
       } else {
         delai = parseInt(delaiStr, 10) || 0;
-        if (delai <= 0) delaiTexte = "A quai";
-        else if (delai < 60) delaiTexte = delai + " min";
-        else { 
-          const h = Math.floor(delai/60), m = delai%60; 
-          delaiTexte = h+"h"+(m>0?String(m).padStart(2,"0"):""); 
+        if (delai <= 0) {
+          delaiTexte = "A quai";
+        } else if (delai < 60) {
+          delaiTexte = delai + " min";
+        } else { 
+          const h = Math.floor(delai/60);
+          const m = delai%60; 
+          delaiTexte = h + "h" + (m > 0 ? String(m).padStart(2,"0") : ""); 
         }
       }
       
-      allPassages.push({ nomPole, ligne, direction: directionBrute, delai, delaiTexte });
+      allPassages.push({ 
+        nomPole, 
+        ligne, 
+        direction: directionBrute, 
+        delai, 
+        delaiTexte 
+      });
     }
 
-    allPassages.sort((a,b) => a.delai - b.delai);
+    // Trie par délai
+    allPassages.sort((a, b) => a.delai - b.delai);
 
+    // ✅ Dédoublonnage : une entrée unique par pole+ligne+direction
     const poles = {};
     const vus = new Set();
 
@@ -119,12 +149,25 @@ export async function onRequest(context) {
       if (vus.has(cle)) continue;
       
       vus.add(cle);
-      if (!poles[p.nomPole]) poles[p.nomPole] = [];
-      poles[p.nomPole].push({ ligne: p.ligne, direction: p.direction, delai: p.delai, delaiTexte: p.delaiTexte });
+      
+      if (!poles[p.nomPole]) {
+        poles[p.nomPole] = []; 
+      }
+      
+      poles[p.nomPole].push({ 
+        ligne: p.ligne, 
+        direction: p.direction, 
+        delai: p.delai, 
+        delaiTexte: p.delaiTexte 
+      });
     }
 
-    for (const nom of Object.keys(poles)) poles[nom].sort((a,b) => a.delai - b.delai);
+    // Trie chaque pôle par délai
+    for (const nom of Object.keys(poles)) {
+      poles[nom].sort((a, b) => a.delai - b.delai);
+    }
 
+    // Récupère les alertes
     let alertes = [];
     try {
       const resA = await fetch(
@@ -144,9 +187,15 @@ export async function onRequest(context) {
       }
     } catch(_) {}
 
-    return new Response(JSON.stringify({ poles, alertes, maj: new Date().toISOString() }), { status: 200, headers: CORS });
+    return new Response(
+      JSON.stringify({ poles, alertes, maj: new Date().toISOString() }), 
+      { status: 200, headers: CORS }
+    );
 
   } catch(e) {
-    return new Response(JSON.stringify({ error: e.message, poles: {}, alertes: [], maj: new Date().toISOString() }), { status: 200, headers: CORS });
+    return new Response(
+      JSON.stringify({ error: e.message, poles: {}, alertes: [], maj: new Date().toISOString() }), 
+      { status: 200, headers: CORS }
+    );
   }
 }
