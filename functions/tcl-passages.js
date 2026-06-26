@@ -11,33 +11,17 @@ const ARRETS = {
   "Claudius Collonge": ["46975","542"],
 };
 
-const LIGNES_VALIDES = {
-  "Perrache": ["A","B","T1","T2","C20","C7","C9","18","63","91"],
-  "Confluence": ["T1","C20","C9"],
-  "Sainte-Blandine": ["T1","T2"],
-  "Hotel Region Montrochet": ["T1","T2"],
-  "Musee des Confluences": ["T1","C20"],
-  "Montrochet": ["T2"],
-  "Ampere - Victor Hugo": ["A","18","63"],
-  "Charlemagne - C. Perier": ["18","63"],
-  "Place des Archives": ["A","18"],
-  "Claudius Collonge": ["T1","T2"],
-};
-
 const ALL_IDS = new Set(Object.values(ARRETS).flat());
 
 export async function onRequest(context) {
+  const headers = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+  };
+
   try {
-    const user = context.env.GRANDLYON_USER;
-    const pass = context.env.GRANDLYON_PASS;
-    
-    if (!user || !pass) {
-      return new Response(JSON.stringify({ error: "Secrets manquants", debug: "Ajoute GRANDLYON_USER et GRANDLYON_PASS" }), { 
-        status: 500, headers: { "Content-Type": "application/json" } 
-      });
-    }
-    
-    const auth = "Basic " + btoa(`${user}:${pass}`);
+    // TEST: identifiants en dur (à retirer après test)
+    const auth = "Basic " + btoa("geryrotsaert@gmail.com:Gery1612$");
     
     const res = await fetch(
       "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_systral.tclpassagearret/all.json?maxfeatures=9300&start=1",
@@ -45,27 +29,20 @@ export async function onRequest(context) {
     );
     
     if (res.status === 401) {
-      return new Response(JSON.stringify({ error: "Auth échouée", debug: "Vérifie tes identifiants" }), { 
-        status: 401, headers: { "Content-Type": "application/json" } 
-      });
+      return new Response(JSON.stringify({ error: "Auth échouée - mauvais identifiants" }), { status: 401, headers });
     }
-    
-    if (!res.ok) throw new Error("HTTP " + res.status);
+    if (!res.ok) {
+      return new Response(JSON.stringify({ error: "HTTP " + res.status }), { status: 500, headers });
+    }
     
     const data = await res.json();
     const values = data.values || [];
-    
-    // DEBUG: compte combien de passages matchent nos IDs
-    let debugMatch = 0;
-    let debugSample = [];
-    
     const poles = {};
+    let matchCount = 0;
     
     for (const v of values) {
-      // ✅ Convertir en string pour comparer
       const idDep = String(v.id || "").trim();
       
-      // Cherche le pôle correspondant
       let nomPole = null;
       for (const [pole, ids] of Object.entries(ARRETS)) {
         if (ids.includes(idDep)) {
@@ -75,18 +52,9 @@ export async function onRequest(context) {
       }
       
       if (!nomPole) continue;
-      
-      debugMatch++;
-      if (debugSample.length < 3) {
-        debugSample.push({ id: idDep, pole: nomPole, ligne: v.ligne, direction: v.direction });
-      }
+      matchCount++;
       
       const ligne = String(v.ligne || "").trim().toUpperCase();
-      if (!ligne) continue;
-      
-      const lignesAttendues = LIGNES_VALIDES[nomPole];
-      if (lignesAttendues && !lignesAttendues.includes(ligne)) continue;
-      
       const direction = String(v.direction || "").trim();
       const delaiStr = String(v.delaipassage || "0");
       
@@ -108,7 +76,6 @@ export async function onRequest(context) {
       poles[nomPole].push({ ligne, direction, delai, delaiTexte });
     }
     
-    // Trie et dédoublonne
     for (const nom of Object.keys(poles)) {
       poles[nom].sort((a, b) => a.delai - b.delai);
       const seen = new Set();
@@ -124,27 +91,15 @@ export async function onRequest(context) {
       poles,
       alertes: [],
       maj: new Date().toISOString(),
-      debug: {
-        totalPassages: values.length,
-        matchCount: debugMatch,
-        sample: debugSample,
-        idsCount: ALL_IDS.size
-      }
-    }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
-    });
+      debug: { totalPassages: values.length, matchCount }
+    }), { status: 200, headers });
     
   } catch (e) {
     return new Response(JSON.stringify({
       error: e.message,
-      stack: e.stack,
       poles: {},
       alertes: [],
       maj: new Date().toISOString()
-    }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
-    });
+    }), { status: 200, headers });
   }
 }
