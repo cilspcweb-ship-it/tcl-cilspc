@@ -2,7 +2,7 @@
 // Endpoint officiel CONFIRME fonctionnel : tcl_sytral (sans le S, pas "systral")
 // Table verifiee via tcl_sytral.tclarret (referentiel arrets) le 26/06/2026
 // CORRECTION 26/06/2026 : ajout ID 46049 (A:A) sur Ampere - Victor Hugo
-// CORRECTION 26/06/2026 : normalisation directions A/T1/T2 -> terminus reels uniquement
+// CORRECTION 26/06/2026 : direction A/T1/T2 toujours remplacee par le terminus theorique
 
 const ARRETS = {
   "Perrache":                [33765,33767,33779,30459,32103,32102,30101],
@@ -55,33 +55,20 @@ const SENS_PAR_ID = {
   35094: "A", // Musee des Confluences T1:A
 };
 
-// Terminus reels par ligne et sens
+// Terminus theoriques par ligne et sens - toujours affiches, quelle que soit
+// la direction renvoyee par l'API (service partiel, terminus intermediaire, etc.)
 const TERMINUS = {
   "A":  { "A": "Vaulx-en-Velin La Soie", "R": "Perrache" },
   "T1": { "A": "IUT Feyssine",            "R": "Debourg" },
   "T2": { "A": "Saint-Priest Bel Air",    "R": "Hotel Region Montrochet" },
 };
 
-// Valeurs considerees comme terminus valides (sans accents, minuscules)
-const TERMINUS_VALIDES = {
-  "A":  ["vaulx-en-velin la soie", "perrache"],
-  "T1": ["iut feyssine", "debourg"],
-  "T2": ["saint-priest bel air", "hotel region montrochet", "hôtel région montrochet"],
-};
-
-function normaliserStr(s) {
-  return String(s || "").trim().toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ");
-}
-
-function corrigerDirection(ligne, directionBrute, idArret) {
-  const termValides = TERMINUS_VALIDES[ligne];
-  if (!termValides) return directionBrute;
-  if (termValides.includes(normaliserStr(directionBrute))) return directionBrute;
+function terminerDirection(ligne, idArret) {
+  const t = TERMINUS[ligne];
+  if (!t) return null;
   const sens = SENS_PAR_ID[idArret];
-  if (!sens) return directionBrute;
-  return TERMINUS[ligne][sens];
+  if (!sens) return null;
+  return t[sens];
 }
 
 function normaliserDirection(d) {
@@ -143,11 +130,10 @@ export async function onRequest(context) {
       const lignesAttendues = LIGNES_VALIDES[nomPole];
       if (lignesAttendues && lignesAttendues.length > 0 && !lignesAttendues.includes(ligne)) continue;
 
+      // Pour A, T1, T2 : on force toujours le terminus theorique
       let directionBrute = String(v.direction || "").trim();
-
-      if (ligne === "A" || ligne === "T1" || ligne === "T2") {
-        directionBrute = corrigerDirection(ligne, directionBrute, idDep);
-      }
+      const terminus = terminerDirection(ligne, idDep);
+      if (terminus) directionBrute = terminus;
 
       const direction = normaliserDirection(directionBrute);
       const delaiStr = String(v.delaipassage || "0");
