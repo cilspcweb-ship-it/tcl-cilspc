@@ -1,14 +1,14 @@
 const ARRETS = {
-  "Perrache": ["33765","33767","33779","30459","32103","32102"],
-  "Confluence": ["17397","46179"],
-  "Sainte-Blandine": ["32138","46159","46160","34836","34837"],
-  "Hotel Region Montrochet": ["43835","43836","43838","45378","34874","34875","50432"],
-  "Musee des Confluences": ["2541","2542","2543","2545","46154","35094"],
-  "Montrochet": ["39134","39135"],
-  "Ampere - Victor Hugo": ["10698","42745"],
-  "Charlemagne - C. Perier": ["11898","30057"],
-  "Place des Archives": ["2933","2934","35580","34834","34835"],
-  "Claudius Collonge": ["46975","542"],
+  "Perrache": ["1384","1385","1386","1387","2582","2583","4381","4382"],
+  "Confluence": ["3494","3495","3496","3497"],
+  "Sainte-Blandine": ["1801","1802","1803","1804"],
+  "Hôtel Région Montrochet": ["2691","2692","2693","2694"],
+  "Musée des Confluences": ["3498","3499","3500","3501"],
+  "Montrochet": ["2695","2696"],
+  "Ampère - Victor Hugo": ["1388","1389","1390","1391"],
+  "Charlemagne - C. Perier": ["1392","1393","1394","1395"],
+  "Place des Archives": ["1396","1397","1398","1399"],
+  "Claudius Collonge": ["2697","2698"],
 };
 
 export async function onRequest(context) {
@@ -18,27 +18,20 @@ export async function onRequest(context) {
   };
 
   try {
-    // Utilise les secrets Cloudflare
     const user = context.env.GRANDLYON_USER || "geryrotsaert@gmail.com";
     const pass = context.env.GRANDLYON_PASS || "Gery1612$";
-    
     const auth = "Basic " + btoa(`${user}:${pass}`);
     
     const res = await fetch(
-      "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_systral.tclpassagearret/all.json?maxfeatures=9300&start=1",
+      "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_systral.tclpassagearret/all.json?maxfeatures=50000&start=1",
       { headers: { "Authorization": auth, "Accept": "application/json" } }
     );
     
     if (res.status === 401) {
-      return new Response(JSON.stringify({ error: "Auth échouée - vérifie tes identifiants" }), { 
-        status: 401, headers 
-      });
+      return new Response(JSON.stringify({ error: "Auth échouée" }), { status: 401, headers });
     }
-    
     if (!res.ok) {
-      return new Response(JSON.stringify({ error: "HTTP " + res.status }), { 
-        status: 500, headers 
-      });
+      return new Response(JSON.stringify({ error: "HTTP " + res.status }), { status: 500, headers });
     }
     
     const data = await res.json();
@@ -47,11 +40,11 @@ export async function onRequest(context) {
     let matchCount = 0;
     
     for (const v of values) {
-      const idDep = String(v.id || "").trim();
+      const idArret = String(v.idtarretdestination || v.id || "").trim();
       
       let nomPole = null;
       for (const [pole, ids] of Object.entries(ARRETS)) {
-        if (ids.includes(idDep)) {
+        if (ids.includes(idArret)) {
           nomPole = pole;
           break;
         }
@@ -60,22 +53,16 @@ export async function onRequest(context) {
       if (!nomPole) continue;
       matchCount++;
       
-      const ligne = String(v.ligne || "").trim().toUpperCase();
+      const ligne = String(v.ligne || "").trim();
       const direction = String(v.direction || "").trim();
-      const delaiStr = String(v.delaipassage || "0");
+      const delai = parseInt(String(v.delaipassage || "0"), 10) || 0;
+      let delaiTexte;
       
-      let delai, delaiTexte;
-      if (delaiStr === "Proche" || delaiStr === "proche") {
-        delai = 0; delaiTexte = "À quai";
-      } else {
-        delai = parseInt(delaiStr, 10) || 0;
-        if (delai <= 0) delaiTexte = "À quai";
-        else if (delai < 60) delaiTexte = delai + " min";
-        else {
-          const h = Math.floor(delai / 60);
-          const m = delai % 60;
-          delaiTexte = h + "h" + (m > 0 ? String(m).padStart(2, "0") : "");
-        }
+      if (delai <= 0) delaiTexte = "À quai";
+      else if (delai < 60) delaiTexte = delai + " min";
+      else { 
+        const h = Math.floor(delai/60), m = delai%60; 
+        delaiTexte = h+"h"+(m > 0 ? String(m).padStart(2,"0") : ""); 
       }
       
       if (!poles[nomPole]) poles[nomPole] = [];
@@ -83,19 +70,31 @@ export async function onRequest(context) {
     }
     
     for (const nom of Object.keys(poles)) {
-      poles[nom].sort((a, b) => a.delai - b.delai);
-      const seen = new Set();
-      poles[nom] = poles[nom].filter(p => {
-        const key = `${p.ligne}|${p.direction}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
+      poles[nom].sort((a,b) => a.delai - b.delai);
     }
+    
+    let alertes = [];
+    try {
+      const resA = await fetch(
+        "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_systral.tclalertetrafic_2/all.json?maxfeatures=20&start=1",
+        { headers: { "Authorization": auth, "Accept": "application/json" } }
+      );
+      if (resA.ok) {
+        const bodyA = await resA.json();
+        if (bodyA.values?.length) {
+          alertes = bodyA.values.map(a => ({
+            titre: a.titre || "",
+            message: a.message || "",
+            type: a.type || "Information",
+            lignes: a.lignes ? String(a.lignes).split(",").map(l => l.trim()) : [],
+          }));
+        }
+      }
+    } catch(_) {}
     
     return new Response(JSON.stringify({
       poles,
-      alertes: [],
+      alertes,
       maj: new Date().toISOString(),
       debug: { totalPassages: values.length, matchCount }
     }), { status: 200, headers });
