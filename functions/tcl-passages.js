@@ -1,105 +1,201 @@
+// Cloudflare Pages Function — /functions/tcl-passages.js
 const ARRETS = {
-  "Perrache": ["1384","1385","1386","1387","2582","2583","4381","4382"],
-  "Confluence": ["3494","3495","3496","3497"],
-  "Sainte-Blandine": ["1801","1802","1803","1804"],
-  "Hotel Region Montrochet": ["2691","2692","2693","2694"],
-  "Musee des Confluences": ["3498","3499","3500","3501"],
-  "Montrochet": ["2695","2696"],
-  "Ampere - Victor Hugo": ["1388","1389","1390","1391"],
-  "Charlemagne - C. Perier": ["1392","1393","1394","1395"],
-  "Place des Archives": ["1396","1397","1398","1399"],
-  "Claudius Collonge": ["2697","2698"],
+  "Perrache":                [33765,33767,33779,30459,32103,32102],
+  "Confluence":              [17397,46179],
+  "Sainte-Blandine":        [32138,46159,46160,34836,34837],
+  "Hotel Region Montrochet":[43835,43836,43838,45378,34874,34875,50432],
+  "Musee des Confluences":  [2541,2542,2543,2545,46154,35094],
+  "Montrochet":             [39134,39135],
+  "Ampere - Victor Hugo":   [10698,42745],
+  "Charlemagne - C. Perier":[11898,30057],
+  "Place des Archives":     [2933,2934,35580,34834,34835],
+  "Claudius Collonge":      [46975,542],
+};
+
+const LIGNES_VALIDES = {
+  "Perrache":                ["A","B","T1","T2","C20","C7","C9","18","63","91"],
+  "Confluence":              ["T1","C20","C9"],
+  "Sainte-Blandine":        ["T1","T2"],
+  "Hotel Region Montrochet":["T1","T2"],
+  "Musee des Confluences":  ["T1","C20"],
+  "Montrochet":             ["T2"],
+  "Ampere - Victor Hugo":   ["A","18","63"],
+  "Charlemagne - C. Perier":["18","63"],
+  "Place des Archives":     ["A","18"],
+  "Claudius Collonge":      ["T1","T2"],
+};
+
+const ALL_IDS = new Set(Object.values(ARRETS).flat());
+
+function normaliserDirection(d) {
+  return String(d||"").trim().toUpperCase().replace(/\s+/g," ").replace(/[.,;:'"\-]/g,"");
+}
+
+function normaliserLigne(l) { 
+  return String(l||"").trim().toUpperCase(); 
+}
+
+const CORS = { 
+  "Content-Type": "application/json", 
+  "Access-Control-Allow-Origin": "*" 
 };
 
 export async function onRequest(context) {
-  const headers = {
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-  };
+  if (context.request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS });
+  }
+  
   try {
-    const user = context.env.GRANDLYON_USER || "geryrotsaert@gmail.com";
-    const pass = context.env.GRANDLYON_PASS || "Gery1612$";
+    // ✅ Utilise les SECRETS Cloudflare (pas demo:demo4dev)
+    const user = context.env.GRANDLYON_USER;
+    const pass = context.env.GRANDLYON_PASS;
+    
+    if (!user || !pass) {
+      throw new Error("Secrets Cloudflare non configurés");
+    }
+    
     const auth = "Basic " + btoa(`${user}:${pass}`);
+    const apiHeaders = { "Authorization": auth, "Accept": "application/json" };
 
-    const res = await fetch(
-      "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_sytral.tclpassagearret/all.json?maxfeatures=9300&start=1&srsname=WGS84",
-      { headers: { "Authorization": auth, "Accept": "application/json" } }
+    const resP = await fetch(
+      "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_systral.tclpassagearret/all.json?maxfeatures=9300&start=1&srsname=WGS84",
+      { headers: apiHeaders, signal: AbortSignal.timeout(25000) }
+    );
+    
+    if (resP.status === 401) {
+      throw new Error("Authentification refusee - verifie tes identifiants");
+    }
+    if (!resP.ok) {
+      throw new Error("HTTP " + resP.status);
+    }
+
+    const bodyP = await resP.json();
+    const values = bodyP.values || [];
+
+    if (values.length === 0) {
+      return new Response(
+        JSON.stringify({ poles: {}, alertes: [], maj: new Date().toISOString(), vide: true }), 
+        { status: 200, headers: CORS }
+      );
+    }
+
+    const allPassages = [];
+    
+    // ✅ Filtre sur les DEUX SENS (départ ET arrivée)
+    for (const v of values) {
+      const idDep = v.id;
+      const idArr = v.idtarretdestination;
+      
+      let nomPole = null;
+      
+      // Cherche en départ
+      if (ALL_IDS.has(idDep)) {
+        nomPole = Object.entries(ARRETS).find(([, ids]) => ids.includes(idDep))?.[0];
+      } 
+      // Cherche en arrivée
+      else if (idArr && ALL_IDS.has(idArr)) {
+        nomPole = Object.entries(ARRETS).find(([, ids]) => ids.includes(idArr))?.[0];
+      }
+      
+      if (!nomPole) continue;
+
+      const ligne = normaliserLigne(v.ligne);
+      if (!ligne) continue;
+
+      // Filtre les lignes valides pour ce pôle
+      const lignesAttendues = LIGNES_VALIDES[nomPole];
+      if (lignesAttendues && lignesAttendues.length > 0 && !lignesAttendues.includes(ligne)) {
+        continue;
+      }
+
+      const directionBrute = String(v.direction || "").trim();
+      const delaiStr = String(v.delaipassage || "0");
+      let delai, delaiTexte;
+      
+      if (delaiStr === "Proche" || delaiStr === "proche") {
+        delai = 0; 
+        delaiTexte = "A quai";
+      } else {
+        delai = parseInt(delaiStr, 10) || 0;
+        if (delai <= 0) {
+          delaiTexte = "A quai";
+        } else if (delai < 60) {
+          delaiTexte = delai + " min";
+        } else { 
+          const h = Math.floor(delai/60);
+          const m = delai%60; 
+          delaiTexte = h + "h" + (m > 0 ? String(m).padStart(2,"0") : ""); 
+        }
+      }
+      
+      allPassages.push({ 
+        nomPole, 
+        ligne, 
+        direction: directionBrute, 
+        delai, 
+        delaiTexte 
+      });
+    }
+
+    // Trie par délai
+    allPassages.sort((a, b) => a.delai - b.delai);
+
+    // ✅ Dédoublonnage simple : une entrée par pole+ligne+direction
+    const poles = {};
+    const vus = new Set();
+
+    for (const p of allPassages) {
+      const cle = p.nomPole + "|" + p.ligne + "|" + p.direction;
+      if (vus.has(cle)) continue;
+      
+      vus.add(cle);
+      
+      if (!poles[p.nomPole]) {
+        poles[p.nomPole] = []; 
+      }
+      
+      poles[p.nomPole].push({ 
+        ligne: p.ligne, 
+        direction: p.direction, 
+        delai: p.delai, 
+        delaiTexte: p.delaiTexte 
+      });
+    }
+
+    // Trie chaque pôle par délai
+    for (const nom of Object.keys(poles)) {
+      poles[nom].sort((a, b) => a.delai - b.delai);
+    }
+
+    // Récupère les alertes
+    let alertes = [];
+    try {
+      const resA = await fetch(
+        "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_systral.tclalertetrafic_2/all.json?maxfeatures=20&start=1&srsname=WGS84",
+        { headers: apiHeaders, signal: AbortSignal.timeout(10000) }
+      );
+      if (resA.ok) {
+        const bodyA = await resA.json();
+        if (bodyA.values?.length) {
+          alertes = bodyA.values.map(a => ({
+            titre: a.titre || "",
+            message: a.message || "",
+            type: a.type || "Information",
+            lignes: a.lignes ? String(a.lignes).split(",").map(l => l.trim()) : [],
+          }));
+        }
+      }
+    } catch(_) {}
+
+    return new Response(
+      JSON.stringify({ poles, alertes, maj: new Date().toISOString() }), 
+      { status: 200, headers: CORS }
     );
 
-    if (res.status === 401) {
-      return new Response(JSON.stringify({ error: "Auth echouee" }), { status: 401, headers });
-    }
-    if (res.status === 404) {
-      return new Response(JSON.stringify({ error: "API introuvable" }), { status: 404, headers });
-    }
-    if (!res.ok) {
-      return new Response(JSON.stringify({ error: "HTTP " + res.status }), { status: 500, headers });
-    }
-
-    const data = await res.json();
-    const values = data.values || [];
-
-    // DIAGNOSTIC : champs presents dans le premier enregistrement brut.
-    // Permet de voir le vrai nom du champ id d'arret sans deviner.
-    const champsExemple = values.length > 0 ? Object.keys(values[0]) : [];
-    const premierEnregistrementBrut = values.length > 0 ? values[0] : null;
-
-    // DIAGNOSTIC : toutes les lignes uniques presentes dans le flux brut,
-    // avec un compteur, pour voir si A B C D (metro) existent reellement.
-    const compteurLignes = {};
-    for (const v of values) {
-      const l = String(v.ligne || "?").trim();
-      compteurLignes[l] = (compteurLignes[l] || 0) + 1;
-    }
-
-    // DIAGNOSTIC : passages bruts dont la ligne est A, B, C ou D (metro),
-    // avec tous leurs champs, pour identifier le vrai champ ID a utiliser.
-    const passagesMetroBruts = values
-      .filter(v => ["A","B","C","D"].includes(String(v.ligne || "").trim().toUpperCase()))
-      .slice(0, 20);
-
-    const poles = {};
-    for (const v of values) {
-      const idArret = String(v.idtarretdestination || v.id || "").trim();
-      const nomPole = Object.entries(ARRETS).find(([, ids]) => ids.includes(idArret))?.[0];
-      if (!nomPole) continue;
-      const ligne = String(v.ligne || "").trim();
-      const direction = String(v.direction || "").trim();
-      const delai = parseInt(String(v.delaipassage || "0"), 10) || 0;
-      let delaiTexte;
-
-      if (delai <= 0) delaiTexte = "A quai";
-      else if (delai < 60) delaiTexte = delai + " min";
-      else {
-        const h = Math.floor(delai/60), m = delai%60;
-        delaiTexte = h+"h"+(m > 0 ? String(m).padStart(2,"0") : "");
-      }
-      if (!poles[nomPole]) poles[nomPole] = [];
-      poles[nomPole].push({ ligne, direction, delai, delaiTexte });
-    }
-    for (const nom of Object.keys(poles)) poles[nom].sort((a,b) => a.delai - b.delai);
-
-    return new Response(JSON.stringify({
-      poles,
-      alertes: [],
-      maj: new Date().toISOString(),
-      debug: {
-        totalPassagesRecus: values.length,
-        matchCountPoles: Object.values(poles).flat().length,
-        champsDisponiblesPremierEnregistrement: champsExemple,
-        premierEnregistrementBrut: premierEnregistrementBrut,
-        compteurParLigne: compteurLignes,
-        nombrePassagesMetroTrouves: passagesMetroBruts.length,
-        passagesMetroBruts: passagesMetroBruts,
-      }
-    }), { status: 200, headers });
-
-  } catch (e) {
-    return new Response(JSON.stringify({
-      error: e.message,
-      poles: {},
-      alertes: [],
-      maj: new Date().toISOString()
-    }), { status: 200, headers });
+  } catch(e) {
+    return new Response(
+      JSON.stringify({ error: e.message, poles: {}, alertes: [], maj: new Date().toISOString() }), 
+      { status: 200, headers: CORS }
+    );
   }
 }
