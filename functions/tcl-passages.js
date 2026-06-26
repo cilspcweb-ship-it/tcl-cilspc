@@ -1,5 +1,7 @@
 // Cloudflare Pages Function — /functions/tcl-passages.js
 // CORRECTION 26/06/2026 : IDs corriges, terminus A/T1/T2 forces
+// CORRECTION 26/06/2026 : un seul a quai par pole pour T1/T2 (quai partage)
+// CORRECTION 26/06/2026 : normalisation accents direction
 
 const ARRETS = {
   "Perrache":                [33765,33767,33779,30459,32103,32102,30101],
@@ -27,6 +29,17 @@ const LIGNES_VALIDES = {
   "Claudius Collonge":      ["S1","63"],
 };
 
+// Poles ou T1 et T2 partagent le meme quai physique
+// -> un seul "a quai" autorise pour le groupe T1/T2 ensemble
+const POLES_QUAI_PARTAGE_T1T2 = new Set([
+  "Sainte-Blandine",
+  "Place des Archives",
+  "Musee des Confluences",
+  "Hotel Region Montrochet",
+  "Montrochet",
+  "Claudius Collonge",
+]);
+
 const SENS_PAR_ID = {
   30101:"A", 30459:"R",
   42745:"R", 46049:"A",
@@ -45,6 +58,17 @@ const TERMINUS = {
   "T2": {"A":"Saint-Priest Bel Air",   "R":"Hotel Region Montrochet"},
 };
 
+// Normalisation des directions : retire accents pour comparaison,
+// mais conserve la forme lisible pour l'affichage
+const DIRECTION_AFFICHAGE = {
+  "HOTEL REGION MONTROCHET": "Hôtel Région Montrochet",
+  "IUT FEYSSINE":            "IUT Feyssine",
+  "DEBOURG":                 "Debourg",
+  "SAINT-PRIEST BEL AIR":   "Saint-Priest Bel Air",
+  "VAULX-EN-VELIN LA SOIE": "Vaulx-en-Velin La Soie",
+  "PERRACHE":                "Perrache",
+};
+
 function terminerDirection(ligne, idArret) {
   const t = TERMINUS[ligne];
   if (!t) return null;
@@ -54,7 +78,9 @@ function terminerDirection(ligne, idArret) {
 }
 
 function normaliserDirection(d) {
-  return String(d||"").trim().toUpperCase().replace(/\s+/g," ").replace(/[.,;:'"\-]/g,"");
+  return String(d||"").trim().toUpperCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/\s+/g," ").replace(/[.,;:'"\-]/g,"");
 }
 
 function normaliserLigne(l) { return String(l||"").trim().toUpperCase(); }
@@ -102,11 +128,15 @@ export async function onRequest(context) {
       const lignesAttendues=LIGNES_VALIDES[nomPole];
       if (lignesAttendues&&lignesAttendues.length>0&&!lignesAttendues.includes(ligne)) continue;
 
+      // Terminus force pour A, T1, T2
       let directionBrute=String(v.direction||"").trim();
       const terminus=terminerDirection(ligne,idDep);
       if (terminus) directionBrute=terminus;
 
-      const direction=normaliserDirection(directionBrute);
+      // Forme lisible avec accents
+      const dirNorm=normaliserDirection(directionBrute);
+      const dirAffichage=DIRECTION_AFFICHAGE[dirNorm]||directionBrute;
+
       const delaiStr=String(v.delaipassage||"0");
       let delai,delaiTexte;
       if (delaiStr==="Proche"||delaiStr==="proche"){delai=0;delaiTexte="A quai";}
@@ -116,7 +146,7 @@ export async function onRequest(context) {
         else if (delai<60) delaiTexte=delai+" min";
         else {const h=Math.floor(delai/60),m=delai%60;delaiTexte=h+"h"+(m>0?String(m).padStart(2,"0"):"");}
       }
-      allPassages.push({nomPole,ligne,direction,directionBrute,delai,delaiTexte});
+      allPassages.push({nomPole,ligne,direction:dirNorm,directionBrute:dirAffichage,delai,delaiTexte});
     }
 
     allPassages.sort((a,b)=>a.delai-b.delai);
@@ -124,14 +154,33 @@ export async function onRequest(context) {
     const poles={};
     const vusStrict=new Set();
     const vusAQuaiParLigne=new Set();
+    const vusAQuaiT1T2=new Set(); // un seul a quai T1/T2 par pole a quai partage
+
     for (const p of allPassages) {
       const cleStricte=p.nomPole+"|"+p.ligne+"|"+p.direction;
       if (vusStrict.has(cleStricte)) continue;
-      if (p.delai<=0){const cleAQuai=p.nomPole+"|"+p.ligne;if(vusAQuaiParLigne.has(cleAQuai))continue;vusAQuaiParLigne.add(cleAQuai);}
+
+      if (p.delai<=0) {
+        // Regle standard : un seul a quai par pole+ligne
+        const cleAQuai=p.nomPole+"|"+p.ligne;
+        if (vusAQuaiParLigne.has(cleAQuai)) continue;
+
+        // Regle supplementaire : sur quais partages T1/T2,
+        // un seul a quai pour l'ensemble du groupe T1/T2
+        if ((p.ligne==="T1"||p.ligne==="T2") && POLES_QUAI_PARTAGE_T1T2.has(p.nomPole)) {
+          const cleT1T2=p.nomPole+"|T1T2";
+          if (vusAQuaiT1T2.has(cleT1T2)) continue;
+          vusAQuaiT1T2.add(cleT1T2);
+        }
+
+        vusAQuaiParLigne.add(cleAQuai);
+      }
+
       vusStrict.add(cleStricte);
       if (!poles[p.nomPole]) poles[p.nomPole]=[];
       poles[p.nomPole].push({ligne:p.ligne,direction:p.directionBrute,delai:p.delai,delaiTexte:p.delaiTexte});
     }
+
     for (const nom of Object.keys(poles)) poles[nom].sort((a,b)=>a.delai-b.delai);
 
     let alertes=[];
