@@ -1,4 +1,4 @@
-// Cloudflare Pages Function
+// Cloudflare Pages Function - TCL Passages en temps réel
 const ARRETS = {
   "Perrache": [33765,33767,33779,30459,32103,32102],
   "Confluence": [17397,46179],
@@ -29,14 +29,14 @@ const ALL_IDS = new Set(Object.values(ARRETS).flat());
 
 export async function onRequest(context) {
   try {
-    // ✅ Vérifie les secrets Cloudflare
+    // Récupère les secrets Cloudflare
     const user = context.env.GRANDLYON_USER;
     const pass = context.env.GRANDLYON_PASS;
     
     if (!user || !pass) {
       return new Response(JSON.stringify({ 
-        error: "Secrets Cloudflare non configurés",
-        message: "Ajoute GRANDLYON_USER et GRANDLYON_PASS dans Settings > Variables and secrets"
+        error: "Secrets non configurés",
+        message: "Ajoute GRANDLYON_USER et GRANDLYON_PASS dans Cloudflare Settings"
       }), { 
         status: 500,
         headers: { "Content-Type": "application/json" }
@@ -45,44 +45,39 @@ export async function onRequest(context) {
     
     const auth = "Basic " + btoa(`${user}:${pass}`);
     
+    // Récupère TOUS les passages
     const res = await fetch(
       "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_systral.tclpassagearret/all.json?maxfeatures=9300&start=1",
       { 
-        headers: { 
-          "Authorization": auth, 
-          "Accept": "application/json" 
-        } 
+        headers: { "Authorization": auth, "Accept": "application/json" }
       }
     );
     
     if (res.status === 401) {
       return new Response(JSON.stringify({ 
-        error: "Authentification échouée",
-        message: "Vérifie tes identifiants GrandLyon dans les secrets Cloudflare"
-      }), { 
-        status: 401,
-        headers: { "Content-Type": "application/json" }
-      });
+        error: "Auth échouée",
+        message: "Vérifie tes identifiants dans Cloudflare Secrets"
+      }), { status: 401, headers: { "Content-Type": "application/json" } });
     }
     
-    if (!res.ok) {
-      throw new Error("HTTP " + res.status);
-    }
+    if (!res.ok) throw new Error("HTTP " + res.status);
     
     const data = await res.json();
     const values = data.values || [];
-    
     const poles = {};
     
+    // Filtre sur les DEUX SENS (départ ET arrivée)
     for (const v of values) {
       const idDep = v.id;
       const idArr = v.idtarretdestination;
-      
       let nomPole = null;
       
+      // Cherche en départ
       if (ALL_IDS.has(idDep)) {
         nomPole = Object.entries(ARRETS).find(([, ids]) => ids.includes(idDep))?.[0];
-      } else if (idArr && ALL_IDS.has(idArr)) {
+      }
+      // Cherche en arrivée
+      else if (idArr && ALL_IDS.has(idArr)) {
         nomPole = Object.entries(ARRETS).find(([, ids]) => ids.includes(idArr))?.[0];
       }
       
@@ -99,8 +94,7 @@ export async function onRequest(context) {
       
       let delai, delaiTexte;
       if (delaiStr === "Proche" || delaiStr === "proche") {
-        delai = 0;
-        delaiTexte = "À quai";
+        delai = 0; delaiTexte = "À quai";
       } else {
         delai = parseInt(delaiStr, 10) || 0;
         if (delai <= 0) delaiTexte = "À quai";
@@ -113,12 +107,7 @@ export async function onRequest(context) {
       }
       
       if (!poles[nomPole]) poles[nomPole] = [];
-      poles[nomPole].push({
-        ligne,
-        direction,
-        delai,
-        delaiTexte
-      });
+      poles[nomPole].push({ ligne, direction, delai, delaiTexte });
     }
     
     // Trie et dédoublonne
@@ -139,10 +128,7 @@ export async function onRequest(context) {
       maj: new Date().toISOString()
     }), {
       status: 200,
-      headers: { 
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*"
-      }
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
     });
     
   } catch (e) {
@@ -153,10 +139,7 @@ export async function onRequest(context) {
       maj: new Date().toISOString()
     }), {
       status: 200,
-      headers: { 
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*"
-      }
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
     });
   }
 }
