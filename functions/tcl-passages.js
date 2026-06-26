@@ -11,8 +11,6 @@ const ARRETS = {
   "Claudius Collonge": ["46975","542"],
 };
 
-const ALL_IDS = new Set(Object.values(ARRETS).flat());
-
 export async function onRequest(context) {
   const headers = {
     "Content-Type": "application/json",
@@ -20,8 +18,11 @@ export async function onRequest(context) {
   };
 
   try {
-    // TEST: identifiants en dur (à retirer après test)
-    const auth = "Basic " + btoa("geryrotsaert@gmail.com:Gery1612$");
+    // Utilise les secrets Cloudflare
+    const user = context.env.GRANDLYON_USER || "geryrotsaert@gmail.com";
+    const pass = context.env.GRANDLYON_PASS || "Gery1612$";
+    
+    const auth = "Basic " + btoa(`${user}:${pass}`);
     
     const res = await fetch(
       "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_systral.tclpassagearret/all.json?maxfeatures=9300&start=1",
@@ -29,10 +30,15 @@ export async function onRequest(context) {
     );
     
     if (res.status === 401) {
-      return new Response(JSON.stringify({ error: "Auth échouée - mauvais identifiants" }), { status: 401, headers });
+      return new Response(JSON.stringify({ error: "Auth échouée - vérifie tes identifiants" }), { 
+        status: 401, headers 
+      });
     }
+    
     if (!res.ok) {
-      return new Response(JSON.stringify({ error: "HTTP " + res.status }), { status: 500, headers });
+      return new Response(JSON.stringify({ error: "HTTP " + res.status }), { 
+        status: 500, headers 
+      });
     }
     
     const data = await res.json();
