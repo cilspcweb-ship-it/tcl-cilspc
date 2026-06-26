@@ -2,6 +2,7 @@
 // Endpoint officiel CONFIRME fonctionnel : tcl_sytral (sans le S, pas "systral")
 // Table verifiee via tcl_sytral.tclarret (referentiel arrets) le 26/06/2026
 // CORRECTION 26/06/2026 : ajout ID 46049 (A:A sens Vaulx-en-Velin) sur Ampere - Victor Hugo
+// CORRECTION 26/06/2026 : normalisation direction T2 (directions intermediaires -> terminus reel)
 
 const ARRETS = {
   "Perrache":                [33765,33767,33779,30459,32103,32102,30101],
@@ -18,8 +19,6 @@ const ARRETS = {
 
 // Lignes reellement desservies par pole, VERIFIEES via le referentiel officiel
 // tcl_sytral.tclarret (champ "desserte") le 26/06/2026.
-// JD... = lignes scolaires/specifiques, conservees ici si vous voulez les voir,
-// retirez-les de la liste si vous ne voulez que les lignes commerciales classiques.
 const LIGNES_VALIDES = {
   "Perrache":                ["A","T1","T2","C19","JD10","JD231"],
   "Confluence":              ["S1","NAVI1"],
@@ -33,7 +32,13 @@ const LIGNES_VALIDES = {
   "Claudius Collonge":      ["S1","63"],
 };
 
+// Terminus reels par ligne.
+// Si la direction renvoyee par l'API n'est pas dans cette liste, on substitue
+// le terminus oppose. Pour T2 dans ce quartier : terminus ouest = Hotel Region
+// Montrochet, terminus est = Saint-Priest Bel Air.
 const ALL_IDS = new Set(Object.values(ARRETS).flat());
+
+const TERMINUS_T2 = ["saint-priest bel air", "hotel region montrochet", "hôtel région montrochet"];
 
 function normaliserDirection(d) {
   return String(d || "")
@@ -45,6 +50,17 @@ function normaliserDirection(d) {
 
 function normaliserLigne(l) {
   return String(l || "").trim().toUpperCase();
+}
+
+function corrigerDirectionT2(directionBrute) {
+  const d = String(directionBrute || "").trim().toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // retire accents
+  for (const t of TERMINUS_T2) {
+    const tNorm = t.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (d === tNorm) return directionBrute; // c'est deja un terminus, on garde
+  }
+  // Direction intermediaire : le tram va vers Saint-Priest Bel Air
+  return "Saint-Priest Bel Air";
 }
 
 const CORS = {
@@ -99,8 +115,14 @@ export async function onRequest(context) {
         continue;
       }
 
-      const directionBrute = String(v.direction || "").trim();
-      const direction = normaliserDirection(v.direction);
+      let directionBrute = String(v.direction || "").trim();
+
+      // Normalisation direction T2 : remplace les directions intermediaires par le terminus reel
+      if (ligne === "T2") {
+        directionBrute = corrigerDirectionT2(directionBrute);
+      }
+
+      const direction = normaliserDirection(directionBrute);
       const delaiStr = String(v.delaipassage || "0");
       let delai, delaiTexte;
 
