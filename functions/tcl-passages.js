@@ -1,7 +1,7 @@
-// Cloudflare Pages Function — port exact de tcl-passages-v8.js
+// Cloudflare Pages Function â€” port exact de tcl-passages-v8.js
 
 const ARRETS = {
-  "Perrache":                [33765,33767,33779,30459,32103,32102],
+  "Perrache":[33765,33767,33779,30459,32103,32102,23467],
   "Confluence":              [17397,46179],
   "Sainte-Blandine":        [32138,46159,46160,34836,34837],
   "Hotel Region Montrochet":[43835,43836,43838,45378,34874,34875,50432],
@@ -14,7 +14,7 @@ const ARRETS = {
 };
 
 const LIGNES_VALIDES = {
-  "Perrache":                ["A","B","T1","T2","C20","C7","C9","18","63","91"],
+  "Perrache":["A","B","T1","T2","C20","C7","C9","18","63","91","3085","3086","3087","3083","3084","3082","3080","84","77","S8"],
   "Confluence":              ["T1","C20","C9"],
   "Sainte-Blandine":        ["T1","T2"],
   "Hotel Region Montrochet":["T1","T2"],
