@@ -22,13 +22,17 @@ export async function onRequest(context) {
     const pass = context.env.GRANDLYON_PASS || "Gery1612$";
     const auth = "Basic " + btoa(`${user}:${pass}`);
     
+    // URL CORRIGÉE
     const res = await fetch(
-      "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_systral.tclpassagearret/all.json?maxfeatures=50000&start=1",
+      "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_sytral.tclpassagearret/all.json?maxfeatures=9300&start=1&srsname=WGS84",
       { headers: { "Authorization": auth, "Accept": "application/json" } }
     );
     
     if (res.status === 401) {
       return new Response(JSON.stringify({ error: "Auth échouée" }), { status: 401, headers });
+    }
+    if (res.status === 404) {
+      return new Response(JSON.stringify({ error: "API introuvable", url: "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_systral.tclpassagearret/all.json" }), { status: 404, headers });
     }
     if (!res.ok) {
       return new Response(JSON.stringify({ error: "HTTP " + res.status }), { status: 500, headers });
@@ -37,22 +41,12 @@ export async function onRequest(context) {
     const data = await res.json();
     const values = data.values || [];
     const poles = {};
-    let matchCount = 0;
     
     for (const v of values) {
       const idArret = String(v.idtarretdestination || v.id || "").trim();
-      
-      let nomPole = null;
-      for (const [pole, ids] of Object.entries(ARRETS)) {
-        if (ids.includes(idArret)) {
-          nomPole = pole;
-          break;
-        }
-      }
-      
+      const nomPole = Object.entries(ARRETS).find(([, ids]) => ids.includes(idArret))?.[0];
       if (!nomPole) continue;
-      matchCount++;
-      
+
       const ligne = String(v.ligne || "").trim();
       const direction = String(v.direction || "").trim();
       const delai = parseInt(String(v.delaipassage || "0"), 10) || 0;
@@ -64,39 +58,18 @@ export async function onRequest(context) {
         const h = Math.floor(delai/60), m = delai%60; 
         delaiTexte = h+"h"+(m > 0 ? String(m).padStart(2,"0") : ""); 
       }
-      
+
       if (!poles[nomPole]) poles[nomPole] = [];
       poles[nomPole].push({ ligne, direction, delai, delaiTexte });
     }
-    
-    for (const nom of Object.keys(poles)) {
-      poles[nom].sort((a,b) => a.delai - b.delai);
-    }
-    
-    let alertes = [];
-    try {
-      const resA = await fetch(
-        "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_systral.tclalertetrafic_2/all.json?maxfeatures=20&start=1",
-        { headers: { "Authorization": auth, "Accept": "application/json" } }
-      );
-      if (resA.ok) {
-        const bodyA = await resA.json();
-        if (bodyA.values?.length) {
-          alertes = bodyA.values.map(a => ({
-            titre: a.titre || "",
-            message: a.message || "",
-            type: a.type || "Information",
-            lignes: a.lignes ? String(a.lignes).split(",").map(l => l.trim()) : [],
-          }));
-        }
-      }
-    } catch(_) {}
-    
+
+    for (const nom of Object.keys(poles)) poles[nom].sort((a,b) => a.delai - b.delai);
+
     return new Response(JSON.stringify({
       poles,
-      alertes,
+      alertes: [],
       maj: new Date().toISOString(),
-      debug: { totalPassages: values.length, matchCount }
+      debug: { totalPassages: values.length, matchCount: Object.values(poles).flat().length }
     }), { status: 200, headers });
     
   } catch (e) {
