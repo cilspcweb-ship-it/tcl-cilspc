@@ -1,4 +1,4 @@
-// Cloudflare Pages Function - TCL Passages en temps réel
+// Cloudflare Pages Function - TCL Passages
 const ARRETS = {
   "Perrache": [33765,33767,33779,30459,32103,32102],
   "Confluence": [17397,46179],
@@ -29,35 +29,28 @@ const ALL_IDS = new Set(Object.values(ARRETS).flat());
 
 export async function onRequest(context) {
   try {
-    // Récupère les secrets Cloudflare
     const user = context.env.GRANDLYON_USER;
     const pass = context.env.GRANDLYON_PASS;
     
     if (!user || !pass) {
-      return new Response(JSON.stringify({ 
-        error: "Secrets non configurés",
-        message: "Ajoute GRANDLYON_USER et GRANDLYON_PASS dans Cloudflare Settings"
-      }), { 
-        status: 500,
-        headers: { "Content-Type": "application/json" }
+      return new Response(JSON.stringify({ error: "Secrets manquants" }), { 
+        status: 500, 
+        headers: { "Content-Type": "application/json" } 
       });
     }
     
     const auth = "Basic " + btoa(`${user}:${pass}`);
     
-    // Récupère TOUS les passages
     const res = await fetch(
       "https://data.grandlyon.com/fr/datapusher/ws/rdata/tcl_systral.tclpassagearret/all.json?maxfeatures=9300&start=1",
-      { 
-        headers: { "Authorization": auth, "Accept": "application/json" }
-      }
+      { headers: { "Authorization": auth, "Accept": "application/json" } }
     );
     
     if (res.status === 401) {
-      return new Response(JSON.stringify({ 
-        error: "Auth échouée",
-        message: "Vérifie tes identifiants dans Cloudflare Secrets"
-      }), { status: 401, headers: { "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Auth échouée" }), { 
+        status: 401, 
+        headers: { "Content-Type": "application/json" } 
+      });
     }
     
     if (!res.ok) throw new Error("HTTP " + res.status);
@@ -66,18 +59,14 @@ export async function onRequest(context) {
     const values = data.values || [];
     const poles = {};
     
-    // Filtre sur les DEUX SENS (départ ET arrivée)
     for (const v of values) {
       const idDep = v.id;
       const idArr = v.idtarretdestination;
       let nomPole = null;
       
-      // Cherche en départ
       if (ALL_IDS.has(idDep)) {
         nomPole = Object.entries(ARRETS).find(([, ids]) => ids.includes(idDep))?.[0];
-      }
-      // Cherche en arrivée
-      else if (idArr && ALL_IDS.has(idArr)) {
+      } else if (idArr && ALL_IDS.has(idArr)) {
         nomPole = Object.entries(ARRETS).find(([, ids]) => ids.includes(idArr))?.[0];
       }
       
@@ -110,7 +99,6 @@ export async function onRequest(context) {
       poles[nomPole].push({ ligne, direction, delai, delaiTexte });
     }
     
-    // Trie et dédoublonne
     for (const nom of Object.keys(poles)) {
       poles[nom].sort((a, b) => a.delai - b.delai);
       const seen = new Set();
