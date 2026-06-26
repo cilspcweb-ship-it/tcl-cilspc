@@ -1,6 +1,7 @@
 // tcl-passages.js -- Cloudflare Pages Function
 // Endpoint officiel CONFIRME fonctionnel : tcl_sytral (sans le S, pas "systral")
 // Table verifiee via tcl_sytral.tclarret (referentiel arrets) le 26/06/2026
+// CORRECTION 26/06/2026 : ajout ID 46049 (A:A sens Vaulx-en-Velin) sur Ampere - Victor Hugo
 
 const ARRETS = {
   "Perrache":                [33765,33767,33779,30459,32103,32102,30101],
@@ -9,7 +10,7 @@ const ARRETS = {
   "Hotel Region Montrochet":[43835,43836,43838,45378,34874,34875,50432],
   "Musee des Confluences":  [2541,2542,2543,2545,46154,35094],
   "Montrochet":             [39134,39135],
-  "Ampere - Victor Hugo":   [10698,42745],
+  "Ampere - Victor Hugo":   [10698,42745,46049],
   "Charlemagne - C. Perier":[11898,30057],
   "Place des Archives":     [2933,2934,35580,34834,34835],
   "Claudius Collonge":      [46975,542],
