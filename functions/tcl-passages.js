@@ -1,8 +1,8 @@
 // tcl-passages.js -- Cloudflare Pages Function
 // Endpoint officiel CONFIRME fonctionnel : tcl_sytral (sans le S, pas "systral")
 // Table verifiee via tcl_sytral.tclarret (referentiel arrets) le 26/06/2026
-// CORRECTION 26/06/2026 : ajout ID 46049 (A:A sens Vaulx-en-Velin) sur Ampere - Victor Hugo
-// CORRECTION 26/06/2026 : normalisation direction T2 (directions intermediaires -> terminus reel)
+// CORRECTION 26/06/2026 : ajout ID 46049 (A:A) sur Ampere - Victor Hugo
+// CORRECTION 26/06/2026 : normalisation directions T1/T2 -> terminus reels uniquement
 
 const ARRETS = {
   "Perrache":                [33765,33767,33779,30459,32103,32102,30101],
@@ -32,13 +32,55 @@ const LIGNES_VALIDES = {
   "Claudius Collonge":      ["S1","63"],
 };
 
-// Terminus reels par ligne.
-// Si la direction renvoyee par l'API n'est pas dans cette liste, on substitue
-// le terminus oppose. Pour T2 dans ce quartier : terminus ouest = Hotel Region
-// Montrochet, terminus est = Saint-Priest Bel Air.
-const ALL_IDS = new Set(Object.values(ARRETS).flat());
+// Sens par ID d'arret pour T1 et T2 (verifie via referentiel tclarret 26/06/2026)
+// "A" = sens Aller, "R" = sens Retour
+const SENS_TRAM = {
+  // T1 et T2
+  32103: "A", // Perrache T1:A T2:A
+  32102: "R", // Perrache T1:R T2:R
+  34834: "A", // Place des Archives T1:A T2:A
+  34835: "R", // Place des Archives T1:R T2:R
+  34836: "A", // Sainte-Blandine T1:A T2:A
+  34837: "R", // Sainte-Blandine T1:R T2:R
+  34874: "R", // Hotel Region Montrochet T1:R T2:R
+  34875: "A", // Hotel Region Montrochet T1:A T2:A
+  // T1 uniquement
+  32138: "A", // IUT Feyssine T1:A
+  46159: "A", // Debourg T1:A (T6:R ignore)
+  46160: "R", // Debourg T1:R (T6:A ignore)
+  46154: "R", // Musee des Confluences T1:R
+  35094: "A", // Musee des Confluences T1:A
+};
 
-const TERMINUS_T2 = ["saint-priest bel air", "hotel region montrochet", "hôtel région montrochet"];
+// Terminus reels par ligne et sens
+const TERMINUS_TRAM = {
+  "T1": { "A": "IUT Feyssine",           "R": "Debourg" },
+  "T2": { "A": "Saint-Priest Bel Air",   "R": "Hotel Region Montrochet" },
+};
+
+// Directions considerees comme terminus valides (normalise sans accents, minuscules)
+const TERMINUS_VALIDES = {
+  "T1": ["iut feyssine", "debourg"],
+  "T2": ["saint-priest bel air", "hotel region montrochet", "hôtel région montrochet"],
+};
+
+function normaliserStr(s) {
+  return String(s || "").trim().toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function corrigerDirectionTram(ligne, directionBrute, idArret) {
+  const termValides = TERMINUS_VALIDES[ligne];
+  if (!termValides) return directionBrute;
+  const dNorm = normaliserStr(directionBrute);
+  // Si c'est deja un terminus valide, on garde tel quel
+  if (termValides.includes(dNorm)) return directionBrute;
+  // Direction intermediaire : on substitue via le sens de l'arret
+  const sens = SENS_TRAM[idArret];
+  if (!sens) return directionBrute; // arret inconnu, on ne touche pas
+  return TERMINUS_TRAM[ligne][sens];
+}
 
 function normaliserDirection(d) {
   return String(d || "")
@@ -52,16 +94,7 @@ function normaliserLigne(l) {
   return String(l || "").trim().toUpperCase();
 }
 
-function corrigerDirectionT2(directionBrute) {
-  const d = String(directionBrute || "").trim().toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // retire accents
-  for (const t of TERMINUS_T2) {
-    const tNorm = t.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    if (d === tNorm) return directionBrute; // c'est deja un terminus, on garde
-  }
-  // Direction intermediaire : le tram va vers Saint-Priest Bel Air
-  return "Saint-Priest Bel Air";
-}
+const ALL_IDS = new Set(Object.values(ARRETS).flat());
 
 const CORS = {
   "Content-Type": "application/json",
@@ -117,9 +150,9 @@ export async function onRequest(context) {
 
       let directionBrute = String(v.direction || "").trim();
 
-      // Normalisation direction T2 : remplace les directions intermediaires par le terminus reel
-      if (ligne === "T2") {
-        directionBrute = corrigerDirectionT2(directionBrute);
+      // Normalisation direction T1 et T2 : remplace intermediaires par terminus reel
+      if (ligne === "T1" || ligne === "T2") {
+        directionBrute = corrigerDirectionTram(ligne, directionBrute, idDep);
       }
 
       const direction = normaliserDirection(directionBrute);
