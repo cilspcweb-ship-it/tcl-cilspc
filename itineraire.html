@@ -44,8 +44,7 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
 #btn-chercher{width:100%;padding:12px;background:var(--bordeaux);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:background .2s}
 #btn-chercher:hover{background:var(--bordeaux2)}
 #btn-chercher:disabled{background:#ccc;cursor:not-allowed}
-#map{height:300px;border-bottom:1px solid var(--border);position:relative;left:50%;right:50%;margin-left:-50vw;margin-right:-50vw;width:100vw}
-body{overflow-x:hidden}
+#map{height:220px;border-bottom:1px solid var(--border)}
 #resultat{padding:16px 20px}
 #etat-msg{padding:14px 16px;border-radius:8px;font-size:13px;display:none;margin-bottom:14px}
 #etat-msg.load{background:var(--creme2);color:var(--muted)}
@@ -210,12 +209,7 @@ let itinerairesCalcules = [];
 window.addEventListener("load", () => {
   map = L.map("map", { zoomControl: true }).setView([45.7492, 4.8266], 14);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap", maxZoom:19 }).addTo(map);
-  setTimeout(() => map.invalidateSize(), 100);
-  setTimeout(() => map.invalidateSize(), 500);
-  setTimeout(() => map.invalidateSize(), 1500);
-  // Observer les changements de taille de la div carte
-  const ro = new ResizeObserver(() => map.invalidateSize());
-  ro.observe(document.getElementById("map"));
+  setTimeout(() => map.invalidateSize(), 300);
   markersLayer = L.layerGroup().addTo(map);
   routeLayer = L.layerGroup().addTo(map);
 
