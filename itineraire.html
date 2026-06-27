@@ -140,6 +140,7 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
       <label class="mode-check active" id="mode-velov"><input type="checkbox" checked onchange="toggleMode('velov')"><span class="mode-dot" style="background:var(--velov)"></span>Vélo'v</label>
       <label class="mode-check active" id="mode-dott"><input type="checkbox" checked onchange="toggleMode('dott')"><span class="mode-dot" style="background:var(--dott)"></span>Dott</label>
     </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:-4px">Cliquez un ou plusieurs modes — ils peuvent être combinés entre eux</div>
   </div>
   <button id="btn-chercher" onclick="chercher()">Trouver mon itinéraire →</button>
 </div>
@@ -281,6 +282,7 @@ window.addEventListener("load",()=>{
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap",maxZoom:19}).addTo(map);
   markersLayer=L.layerGroup().addTo(map);
   routeLayer=L.layerGroup().addTo(map);
+  setTimeout(()=>map.invalidateSize(),200);
 
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(pos=>{
