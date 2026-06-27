@@ -471,7 +471,9 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
     etapesMarche.push({icone:"🚶",titre:"Marchez jusqu’à votre destination",detail:`${Math.round(dDirecte)} m`,duree:dureeMarche,maps:lienMaps(latDep,lonDep,latDest,lonDest),couleur:"#7a6a5a"});
     etapesMarche.push({icone:"🎯",titre:"Vous êtes arrivé !",detail:"",duree:0,couleur:"#2e8b3a"});
   }
-  options.push({type:"marche",label:"🚶 À pied",duree:dureeMarcheOption,detail:`${Math.round(dDirecte)} m`,etapes:etapesMarche,trace:[[latDep,lonDep],[latDest,lonDest]]});
+  const labelOption=etapesMarche.length>0&&etapesMarche[0].icone==="🛴"?"🛴 Dott":
+    etapesMarche.length>0&&etapesMarche[0].icone==="🚲"?"🚲 Vélo'v":"🚶 À pied";
+  options.push({type:"marche",label:labelOption,duree:dureeMarcheOption,detail:`${Math.round(dDirecte)} m`,etapes:etapesMarche,trace:[[latDep,lonDep],[latDest,lonDest]]});
   if(!modes.tcl)return options;
 
   for(const[ligne,reseau]of Object.entries(RESEAUX)){
@@ -597,7 +599,10 @@ function selectionnerOption(idx){
 function afficherItineraire(iti){
   if(!iti)return;
   const dMarche=Math.round(mToMin(dist(coordDepart.lat,coordDepart.lon,coordDest.lat,coordDest.lon),V_MARCHE));
-  const eco=dMarche-iti.duree;
+  // Comparer toujours avec la vraie marche directe, pas l'option Dott/Velov
+  const ecoBase=itinerairesCalcules.find(o=>o.type==="marche"&&o.label.includes("À pied"));
+  const dMarcheRef=ecoBase?Math.round(mToMin(dist(coordDepart.lat,coordDepart.lon,coordDest.lat,coordDest.lon),V_MARCHE)):dMarche;
+  const eco=dMarcheRef-iti.duree;
   let html=`<div class="trajet-header"><div><div class="trajet-total">⚡ ${iti.duree} min</div><div class="trajet-detail">${eco>0?`${eco} min gagnées vs à pied`:"Trajet optimisé"}</div></div></div>`;
   iti.etapes.forEach(e=>{
     if(e.duree===0&&!e.detail&&e.icone!=="🎯")return;
