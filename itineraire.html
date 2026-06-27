@@ -2127,6 +2127,7 @@ function vitesseLigne(l){const s=String(l).toUpperCase();const u=(s.length>1&&(s
 // Trouver le meilleur trajet DIRECT sur une seule ligne
 function trouverMeilleurTrajet(ligne,reseau,latDep,lonDep,latDest,lonDest){
   let meilleur=null,meilleurDuree=Infinity;
+  const nomLigne=nomLignePropre(ligne);
   const dDirecte=dist(latDep,lonDep,latDest,lonDest);
   for(let i=0;i<reseau.length;i++){
     const ad=reseau[i];
