@@ -2122,24 +2122,30 @@ async function getDottStations(){
   try{const r=await fetch("https://gbfs.api.ridedott.com/public/v2/lyon/station_information.json");const d=await r.json();return d.data?.stations||[];}catch{return[];}
 }
 
-function vitesseLigne(l){const s=String(l).toUpperCase();const u=(s.length>1&&(s.endsWith("A")||s.endsWith("R")))?s.slice(0,-1):s;if(["A","B","C","D"].includes(u))return V_METRO;if(/^T\d/.test(u))return V_TRAM;return 5.0;}
-
 // Trouver le meilleur trajet DIRECT sur une seule ligne
+// Score pondéré : durée réelle − bonus de priorité (métro > tram > bus)
 function trouverMeilleurTrajet(ligne,reseau,latDep,lonDep,latDest,lonDest){
-  let meilleur=null,meilleurDuree=Infinity;
+  let meilleur=null,meilleurScore=Infinity;
   const nomLigne=nomLignePropre(ligne);
   const dDirecte=dist(latDep,lonDep,latDest,lonDest);
+  const isBusLigne=nomLigne.startsWith("C")&&nomLigne.length>1;
+  const isMetro=["A","B","C","D"].includes(nomLigne);
+  const isTram=/^T\d/.test(nomLigne);
+  // Seuil dest plus tolérant pour trams/métros (desservent l'excentré)
+  const seuilArretDest=isBusLigne?1200:(isTram?1600:1400);
+  // Bonus en minutes soustrait du score pour favoriser métro > tram > bus
+  const bonusPriorite=isMetro?3:isTram?1.5:0;
+
   for(let i=0;i<reseau.length;i++){
     const ad=reseau[i];
     const dVersArret=dist(latDep,lonDep,ad.lat,ad.lon);
     if(dVersArret>1500)continue;
     for(let j=0;j<reseau.length;j++){
       if(j===i)continue;
+      if(j<=i)continue; // GTFS ordonné : toujours aller
       const aa=reseau[j];
-      const isBusLigne=nomLigne.startsWith("C")&&nomLigne.length>1;
-      if(j<=i)continue; // GTFS ordonné : toujours respecter le sens aller
       const dArretDest=dist(latDest,lonDest,aa.lat,aa.lon);
-      if(dArretDest>1200)continue;
+      if(dArretDest>seuilArretDest)continue;
       // Bus : ne proposer que si destination hors couverture métro/tram
       if(isBusLigne){
         const metroTramProche=Object.entries(RESEAUX).some(([lg,rs])=>{
@@ -2153,16 +2159,20 @@ function trouverMeilleurTrajet(ligne,reseau,latDep,lonDep,latDest,lonDest){
       let distTCL=0;
       for(let k=iMin;k<iMax;k++) distTCL+=dist(reseau[k].lat,reseau[k].lon,reseau[k+1].lat,reseau[k+1].lon);
       if(distTCL<150)continue;
-      if(distTCL<dDirecte*0.15)continue; // Trajet TCL doit couvrir 15% de la distance
+      // Filtre 15% assoupli : moins strict pour les trajets courts et pour métro/tram
+      const seuilPct=isBusLigne?0.15:(dDirecte<1000?0.05:0.10);
+      if(distTCL<dDirecte*seuilPct)continue;
       const dureeTCL=mToMin(distTCL,vitesseLigne(ligne))+ATTENTE_TCL;
       const dureeTotal=mToMin(dVersArret,V_MARCHE)+dureeTCL+mToMin(dArretDest,V_MARCHE);
-      if(dureeTotal<meilleurDuree){
-        meilleurDuree=dureeTotal;
+      const scorePondere=dureeTotal-bonusPriorite;
+      if(scorePondere<meilleurScore){
+        meilleurScore=scorePondere;
         meilleur={ligne,arretDepart:ad,arretArrivee:aa,
           dureeVersArret:Math.round(mToMin(dVersArret,V_MARCHE)),
           dureeTCL:Math.round(dureeTCL),
           dureeDepuisArret:Math.round(mToMin(dArretDest,V_MARCHE)),
           dureeTotal:Math.round(dureeTotal),
+          scorePondere,
           distVersArret:Math.round(dVersArret),
           distDepuisArret:Math.round(dArretDest),
           sensAller:j>i};
@@ -2173,70 +2183,86 @@ function trouverMeilleurTrajet(ligne,reseau,latDep,lonDep,latDest,lonDest){
 }
 
 // Trouver le meilleur trajet avec UNE correspondance
+// IMPORTANT : les lignes dans CORRESPONDANCES sont sans suffixe ("A","T2"…)
+// mais RESEAUX a des clés avec suffixe ("AA","T2A","T2R"…).
+// On cherche dans les deux sens (A et R) et on garde le meilleur.
 function trouverTrajetAvecCorrespondance(latDep,lonDep,latDest,lonDest){
   let meilleur=null,meilleurDuree=Infinity;
   const dDirecte=dist(latDep,lonDep,latDest,lonDest);
 
+  // Résoudre un nom de ligne en tableau de réseaux (sens A et R)
+  function reseauxPourLigne(nomL){
+    const cles=[nomL+"A",nomL+"R"];
+    return cles.map(c=>({cle:c,reseau:RESEAUX[c]})).filter(x=>x.reseau);
+  }
+
   for(const [nomCorr,lignesCorr] of Object.entries(CORRESPONDANCES)){
     if(lignesCorr.length<2)continue;
-    // Trouver l'arrêt de correspondance dans chaque réseau
+
     for(let li=0;li<lignesCorr.length;li++){
-      const ligne1=lignesCorr[li];
-      const reseau1=RESEAUX[ligne1];
-      if(!reseau1)continue;
-      const arretCorr1=reseau1.find(a=>a.nom===nomCorr||a.nom.startsWith(nomCorr.split(" ")[0]));
-      if(!arretCorr1)continue;
+      const ligne1nom=lignesCorr[li];
+      const reseaux1=reseauxPourLigne(ligne1nom);
+      if(!reseaux1.length)continue;
 
       for(let lj=0;lj<lignesCorr.length;lj++){
         if(lj===li)continue;
-        const ligne2=lignesCorr[lj];
-        const reseau2=RESEAUX[ligne2];
-        if(!reseau2)continue;
-        const arretCorr2=reseau2.find(a=>a.nom===nomCorr||a.nom.startsWith(nomCorr.split(" ")[0]));
-        if(!arretCorr2)continue;
+        const ligne2nom=lignesCorr[lj];
+        const reseaux2=reseauxPourLigne(ligne2nom);
+        if(!reseaux2.length)continue;
 
-        // Chercher meilleur arrêt départ sur ligne1
-        for(let i=0;i<reseau1.length;i++){
-          const ad=reseau1[i];
-          const dVersArret=dist(latDep,lonDep,ad.lat,ad.lon);
-          if(dVersArret>1200)continue;
-          const iCorr=reseau1.indexOf(arretCorr1);
-          if(iCorr<0)continue;
-          const iMin1=Math.min(i,iCorr),iMax1=Math.max(i,iCorr);
-          let dist1=0;
-          for(let k=iMin1;k<iMax1;k++) dist1+=dist(reseau1[k].lat,reseau1[k].lon,reseau1[k+1].lat,reseau1[k+1].lon);
-          if(dist1<100)continue;
-          const duree1=mToMin(dist1,vitesseLigne(ligne1))+ATTENTE_TCL;
+        for(const {cle:cle1,reseau:reseau1} of reseaux1){
+          // L'arrêt de correspondance doit exister dans ce réseau
+          const arretCorr1=reseau1.find(a=>a.nom===nomCorr||a.nom.replace(/\s*-\s*/g," ").toLowerCase()===nomCorr.replace(/\s*-\s*/g," ").toLowerCase());
+          if(!arretCorr1)continue;
 
-          // Chercher meilleur arrêt arrivée sur ligne2
-          for(let j=0;j<reseau2.length;j++){
-            const aa=reseau2[j];
-            const dArretDest=dist(latDest,lonDest,aa.lat,aa.lon);
-            if(dArretDest>1200)continue;
-            const jCorr=reseau2.indexOf(arretCorr2);
-            if(jCorr<0)continue;
-            const jMin2=Math.min(jCorr,j),jMax2=Math.max(jCorr,j);
-            let dist2=0;
-            for(let k=jMin2;k<jMax2;k++) dist2+=dist(reseau2[k].lat,reseau2[k].lon,reseau2[k+1].lat,reseau2[k+1].lon);
-            if(dist2<100)continue;
-            const duree2=mToMin(dist2,vitesseLigne(ligne2))+ATTENTE_TCL;
+          for(const {cle:cle2,reseau:reseau2} of reseaux2){
+            const arretCorr2=reseau2.find(a=>a.nom===nomCorr||a.nom.replace(/\s*-\s*/g," ").toLowerCase()===nomCorr.replace(/\s*-\s*/g," ").toLowerCase());
+            if(!arretCorr2)continue;
 
-            const dureeTotal=mToMin(dVersArret,V_MARCHE)+duree1+2+duree2+mToMin(dArretDest,V_MARCHE); // +2min correspondance
-            if(dureeTotal<meilleurDuree && dureeTotal < mToMin(dDirecte,V_MARCHE)*0.85){
-              meilleurDuree=dureeTotal;
-              meilleur={
-                type:"correspondance",
-                ligne1,arretDepart:ad,arretCorrL1:arretCorr1,
-                ligne2,arretCorrL2:arretCorr2,arretArrivee:aa,
-                nomCorrespondance:nomCorr,
-                dureeVersArret:Math.round(mToMin(dVersArret,V_MARCHE)),
-                duree1:Math.round(duree1),
-                duree2:Math.round(duree2),
-                dureeDepuisArret:Math.round(mToMin(dArretDest,V_MARCHE)),
-                dureeTotal:Math.round(dureeTotal),
-                distVersArret:Math.round(dVersArret),
-                distDepuisArret:Math.round(dArretDest),
-              };
+            // Chercher meilleur arrêt départ sur reseau1
+            for(let i=0;i<reseau1.length;i++){
+              const ad=reseau1[i];
+              const dVersArret=dist(latDep,lonDep,ad.lat,ad.lon);
+              if(dVersArret>1200)continue;
+              const iCorr=reseau1.indexOf(arretCorr1);
+              if(iCorr<0||iCorr===i)continue;
+              const iMin1=Math.min(i,iCorr),iMax1=Math.max(i,iCorr);
+              let dist1=0;
+              for(let k=iMin1;k<iMax1;k++) dist1+=dist(reseau1[k].lat,reseau1[k].lon,reseau1[k+1].lat,reseau1[k+1].lon);
+              if(dist1<100)continue;
+              const duree1=mToMin(dist1,vitesseLigne(cle1))+ATTENTE_TCL;
+
+              // Chercher meilleur arrêt arrivée sur reseau2
+              for(let j=0;j<reseau2.length;j++){
+                const aa=reseau2[j];
+                const dArretDest=dist(latDest,lonDest,aa.lat,aa.lon);
+                if(dArretDest>1400)continue;
+                const jCorr=reseau2.indexOf(arretCorr2);
+                if(jCorr<0||jCorr===j)continue;
+                const jMin2=Math.min(jCorr,j),jMax2=Math.max(jCorr,j);
+                let dist2=0;
+                for(let k=jMin2;k<jMax2;k++) dist2+=dist(reseau2[k].lat,reseau2[k].lon,reseau2[k+1].lat,reseau2[k+1].lon);
+                if(dist2<100)continue;
+                const duree2=mToMin(dist2,vitesseLigne(cle2))+ATTENTE_TCL;
+
+                const dureeTotal=mToMin(dVersArret,V_MARCHE)+duree1+2+duree2+mToMin(dArretDest,V_MARCHE); // +2min correspondance
+                if(dureeTotal<meilleurDuree){
+                  meilleurDuree=dureeTotal;
+                  meilleur={
+                    type:"correspondance",
+                    ligne1:cle1,arretDepart:ad,arretCorrL1:arretCorr1,
+                    ligne2:cle2,arretCorrL2:arretCorr2,arretArrivee:aa,
+                    nomCorrespondance:nomCorr,
+                    dureeVersArret:Math.round(mToMin(dVersArret,V_MARCHE)),
+                    duree1:Math.round(duree1),
+                    duree2:Math.round(duree2),
+                    dureeDepuisArret:Math.round(mToMin(dArretDest,V_MARCHE)),
+                    dureeTotal:Math.round(dureeTotal),
+                    distVersArret:Math.round(dVersArret),
+                    distDepuisArret:Math.round(dArretDest),
+                  };
+                }
+              }
             }
           }
         }
@@ -2378,7 +2404,7 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
     }
 
     etapes.push({icone:"🎯",titre:"Vous êtes arrivé !",detail:"",duree:0,couleur:"#2e8b3a"});
-    options.push({type:"tcl",label:`🚇 Ligne ${nomLigne}`,ligne,duree:trajet.dureeTotal,detail:`${ad.nom} → ${aa.nom}`,etapes,trace:[[latDep,lonDep],[ad.lat,ad.lon],[aa.lat,aa.lon],[latDest,lonDest]]});
+    options.push({type:"tcl",label:`🚇 Ligne ${nomLigne}`,ligne,duree:trajet.dureeTotal,_score:trajet.scorePondere,detail:`${ad.nom} → ${aa.nom}`,etapes,trace:[[latDep,lonDep],[ad.lat,ad.lon],[aa.lat,aa.lon],[latDest,lonDest]]});
   }
 
   // Trajet avec correspondance
@@ -2398,15 +2424,16 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
     if(!etapesC.length) etapesC.push({icone:"🚶",titre:`Marchez jusqu’à ${ad.nom}`,detail:`${trajCorr.distVersArret} m`,duree:trajCorr.dureeVersArret,maps:lienMaps(latDep,lonDep,ad.lat,ad.lon),couleur:"#7a6a5a"});
 
     // Ligne 1
+    const nomL1=nomLignePropre(trajCorr.ligne1),nomL2=nomLignePropre(trajCorr.ligne2);
     const terminus1=RESEAUX[trajCorr.ligne1][RESEAUX[trajCorr.ligne1].indexOf(trajCorr.arretCorrL1)>RESEAUX[trajCorr.ligne1].indexOf(ad)?RESEAUX[trajCorr.ligne1].length-1:0].nom;
-    etapesC.push({icone:"🚇",titre:`Ligne ${trajCorr.ligne1} → direction ${terminus1}`,detail:`De ${ad.nom} jusqu’à ${trajCorr.nomCorrespondance} — ~${trajCorr.duree1} min`,duree:trajCorr.duree1,ligne:trajCorr.ligne1,couleur:couleur1});
-    etapesC.push({icone:"🔄",titre:`Correspondance à ${trajCorr.nomCorrespondance}`,detail:`Changez pour la ligne ${trajCorr.ligne2}`,duree:2,couleur:"#7a6a5a"});
+    etapesC.push({icone:"🚇",titre:`Ligne ${nomL1} → direction ${terminus1}`,detail:`De ${ad.nom} jusqu’à ${trajCorr.nomCorrespondance} — ~${trajCorr.duree1} min`,duree:trajCorr.duree1,ligne:trajCorr.ligne1,couleur:couleur1});
+    etapesC.push({icone:"🔄",titre:`Correspondance à ${trajCorr.nomCorrespondance}`,detail:`Changez pour la ligne ${nomL2}`,duree:2,couleur:"#7a6a5a"});
 
     // Ligne 2
     const iCorr2=RESEAUX[trajCorr.ligne2].indexOf(trajCorr.arretCorrL2);
     const iArr2=RESEAUX[trajCorr.ligne2].indexOf(aa);
     const terminus2=iArr2>iCorr2?RESEAUX[trajCorr.ligne2][RESEAUX[trajCorr.ligne2].length-1].nom:RESEAUX[trajCorr.ligne2][0].nom;
-    etapesC.push({icone:"🚇",titre:`Ligne ${trajCorr.ligne2} → direction ${terminus2}`,detail:`De ${trajCorr.nomCorrespondance} jusqu’à ${aa.nom} — ~${trajCorr.duree2} min`,duree:trajCorr.duree2,ligne:trajCorr.ligne2,couleur:couleur2});
+    etapesC.push({icone:"🚇",titre:`Ligne ${nomL2} → direction ${terminus2}`,detail:`De ${trajCorr.nomCorrespondance} jusqu’à ${aa.nom} — ~${trajCorr.duree2} min`,duree:trajCorr.duree2,ligne:trajCorr.ligne2,couleur:couleur2});
     etapesC.push({icone:"📍",titre:`Descendez à ${aa.nom}`,detail:"",duree:0,couleur:couleur2});
 
     // Fin
@@ -2416,8 +2443,18 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
     options.push({type:"tcl",label:`🚇 ${trajCorr.ligne1}→${trajCorr.ligne2} (corresp.)`,ligne:trajCorr.ligne1,duree:trajCorr.dureeTotal,detail:`${ad.nom} → ${trajCorr.nomCorrespondance} → ${aa.nom}`,etapes:etapesC,trace:[[latDep,lonDep],[ad.lat,ad.lon],[trajCorr.arretCorrL1.lat,trajCorr.arretCorrL1.lon],[aa.lat,aa.lon],[latDest,lonDest]]});
   }
 
-  options.sort((a,b)=>a.duree-b.duree);
-  return options;
+  // Éliminer les options TCL qui sont plus lentes que la marche directe
+  const dureeMarche2=Math.round(mToMin(dDirecte,V_MARCHE));
+  const optionsFiltrees=options.filter(o=>o.type!=="tcl"||o.duree<dureeMarche2);
+
+  // Trier : les options TCL utilisent leur scorePondere (favorise métro > tram > bus)
+  // La marche reste triée par durée réelle
+  optionsFiltrees.sort((a,b)=>{
+    const sa=a.type==="tcl"&&a._score!==undefined?a._score:a.duree;
+    const sb=b.type==="tcl"&&b._score!==undefined?b._score:b.duree;
+    return sa-sb;
+  });
+  return optionsFiltrees;
 }
 
 async function chercher(){
