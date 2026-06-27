@@ -177,6 +177,7 @@ window.addEventListener("load",()=>{
   document.addEventListener("visibilitychange",()=>{
     if(document.visibilityState==="visible") map.invalidateSize();
   });
+  window.addEventListener("scroll",()=>map.invalidateSize(),{once:true});
 
   setupAutocomplete("input-depart","sug-depart",coord=>{
     coordDepart=coord;
