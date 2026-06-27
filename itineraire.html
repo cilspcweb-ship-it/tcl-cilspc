@@ -209,7 +209,8 @@ let itinerairesCalcules = [];
 window.addEventListener("load", () => {
   map = L.map("map", { zoomControl: true }).setView([45.749, 4.827], 13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap", maxZoom:19 }).addTo(map);
-  setTimeout(() => map.invalidateSize(), 300);
+  setTimeout(() => map.invalidateSize(), 100);
+  setTimeout(() => map.invalidateSize(), 500);
   markersLayer = L.layerGroup().addTo(map);
   routeLayer = L.layerGroup().addTo(map);
 
