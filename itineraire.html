@@ -136,7 +136,7 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
   <div class="field">
     <label>Modes</label>
     <div class="modes-row">
-      <label class="mode-check active" id="mode-tcl"><input type="checkbox" checked onchange="toggleMode('tcl')"><span class="mode-dot" style="background:var(--metro)"></span>TCL</label>
+      <label class="mode-check active" id="mode-tcl"><input type="checkbox" checked onchange="toggleMode('tcl')"><span class="mode-dot" style="background:var(--metro)"></span>Métro/Tram</label>
       <label class="mode-check active" id="mode-chrono"><input type="checkbox" checked onchange="toggleMode('chrono')"><span class="mode-dot" style="background:#c0392b"></span>Bus</label>
       <label class="mode-check active" id="mode-velov"><input type="checkbox" checked onchange="toggleMode('velov')"><span class="mode-dot" style="background:var(--velov)"></span>Vélo'v</label>
       <label class="mode-check active" id="mode-dott"><input type="checkbox" checked onchange="toggleMode('dott')"><span class="mode-dot" style="background:var(--dott)"></span>Dott</label>
@@ -201,7 +201,7 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
     <br>
     <div class="tuto-etape">
       <div class="tuto-num" style="background:#e05c00">T</div>
-      <div class="tuto-content"><span class="tuto-chip" style="border:1.5px solid var(--bordeaux);color:var(--bordeaux)"><span class="tuto-dot" style="background:#e05c00"></span>TCL</span> — Métro et tramway du réseau TCL Lyon (lignes A, B, C, D, T1 à T6)</div>
+      <div class="tuto-content"><span class="tuto-chip" style="border:1.5px solid var(--bordeaux);color:var(--bordeaux)"><span class="tuto-dot" style="background:#e05c00"></span>Métro/Tram</span> — Métro (A, B, C, D) et tramway (T1 à T6) du réseau TCL Lyon</div>
     </div>
     <div class="tuto-etape">
       <div class="tuto-num" style="background:#c0392b">B</div>
@@ -1454,9 +1454,11 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
 
   // Trajets directs sur chaque ligne
   for(const[ligne,reseau]of Object.entries(RESEAUX)){
-    const isChrono=ligne.startsWith('C');
-    if(isChrono && !modes.chrono) continue;
-    if(!isChrono && !modes.tcl) continue;
+    const isBus=ligne.startsWith('C');
+    const isMetroTram=['A','B','C','D','T1','T2','T3','T4','T5','T6'].includes(ligne);
+    if(isBus && !modes.chrono) continue;
+    if(isMetroTram && !modes.tcl) continue;
+    if(!isBus && !isMetroTram) continue;
     const trajet=trouverMeilleurTrajet(ligne,reseau,latDep,lonDep,latDest,lonDest);
     if(!trajet)continue;
     const ad=trajet.arretDepart,aa=trajet.arretArrivee;
