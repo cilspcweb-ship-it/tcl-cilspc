@@ -319,7 +319,9 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
         const infoDepot=stationDepot?`Emplacement "${stationDepot.name}" à ${Math.round(stationDepot.d)} m`:"Emplacement réservé Dott";
         etapesMarche.push({icone:"🛴",titre:"Marchez vers la trottinette Dott",detail:`Trottinette à ${Math.round(dd.d)} m`,duree:dureeVersDott,maps:lienMaps(latDep,lonDep,dd.lat,dd.lon),couleur:"#00b4d8"});
         etapesMarche.push({icone:"🛴",titre:"Roulez jusqu’à destination",detail:`~${Math.round(dDirecte)} m en trottinette`,duree:dureeEnDott,maps:lienMaps(dd.lat,dd.lon,latDest,lonDest),couleur:"#00b4d8"});
+        const dureeFinDott=stationDepot?Math.round(mToMin(stationDepot.d,V_MARCHE)):0;
         etapesMarche.push({icone:"🛴",titre:"Déposez la trottinette",detail:infoDepot,duree:0,maps:stationDepot?lienMaps(latDest,lonDest,stationDepot.lat,stationDepot.lon):null,couleur:"#00b4d8"});
+        if(stationDepot&&stationDepot.d>50){etapesMarche.push({icone:"🚶",titre:"Marchez jusqu’à votre destination",detail:`${Math.round(stationDepot.d)} m`,duree:dureeFinDott,maps:lienMaps(stationDepot.lat,stationDepot.lon,latDest,lonDest),couleur:"#7a6a5a"});dureeMarcheOption+=dureeFinDott;}
         etapesMarche.push({icone:"🎯",titre:"Vous êtes arrivé !",detail:"",duree:0,couleur:"#2e8b3a"});
       }
     }
@@ -403,6 +405,7 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
       const infoDepot2=stDepot?`Déposez à "${stDepot.name}" (à ${Math.round(stDepot.d)} m)`:"Emplacement réservé Dott";
       etapes.push({icone:"🛴",titre:"Prenez la trottinette Dott",detail:`Trottinette à ${Math.round(modeFin.bike.d)} m de l'arrêt`,duree:d1,maps:lienMaps(aa.lat,aa.lon,modeFin.bike.lat,modeFin.bike.lon),couleur:"#00b4d8"});
       etapes.push({icone:"🛴",titre:"Déposez la trottinette",detail:infoDepot2,duree:0,maps:stDepot?lienMaps(latDest,lonDest,stDepot.lat,stDepot.lon):null,couleur:"#00b4d8"});
+      if(stDepot&&stDepot.d>50){const dureeFinD=Math.round(mToMin(stDepot.d,V_MARCHE));etapes.push({icone:"🚶",titre:"Marchez jusqu’à votre destination",detail:`${Math.round(stDepot.d)} m`,duree:dureeFinD,maps:lienMaps(stDepot.lat,stDepot.lon,latDest,lonDest),couleur:"#7a6a5a"});}
     }else if(modeFin?.type==="velov"){
       const vdest=velov.filter(s=>s.available_bike_stands>0).map(s=>({...s,d:dist(latDest,lonDest,s.lat,s.lng)})).sort((a,b)=>a.d-b.d)[0];
       const d1=Math.round(mToMin(trajet.distDepuisArret,V_VELO));
