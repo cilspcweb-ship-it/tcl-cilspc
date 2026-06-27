@@ -391,7 +391,7 @@ function trouverMeilleurTrajetLigne(ligne, reseau, latDep, lonDep, latDest, lonD
       // Vérifier que le trajet a du sens (réduit la distance à la destination)
       const dDirecte = dist(latDep, lonDep, latDest, lonDest);
       if (dVersArret > dDirecte * 1.5) continue; // arrêt de départ trop loin
-      if (distTCL < 300) continue; // trajet TCL trop court, pas intéressant
+      if (distTCL < 100) continue; // trajet TCL trop court (même arrêt)
 
       if (dureeTotal < meilleurDuree) {
         meilleurDuree = dureeTotal;
@@ -436,7 +436,7 @@ async function calculerItineraires(latDep, lonDep, latDest, lonDest, velovStatio
   for (const [ligne, reseau] of Object.entries(RESEAUX)) {
     const trajet = trouverMeilleurTrajetLigne(ligne, reseau, latDep, lonDep, latDest, lonDest);
     if (!trajet) continue;
-    if (trajet.dureeTotal >= dureeMarche * 0.9) continue; // pas intéressant si pas mieux que la marche
+    // On garde toujours le TCL même si la marche est plus rapide : l'utilisateur choisit
 
     const ad = trajet.arretDepart;
     const aa = trajet.arretArrivee;
