@@ -262,6 +262,9 @@ async function getVelov(){
 async function getDott(){
   try{const r=await fetch("https://gbfs.api.ridedott.com/public/v2/lyon/free_bike_status.json");const d=await r.json();return(d.data?.bikes||[]).filter(b=>!b.is_reserved&&!b.is_disabled);}catch{return[];}
 }
+async function getDottStations(){
+  try{const r=await fetch("https://gbfs.api.ridedott.com/public/v2/lyon/station_information.json");const d=await r.json();return d.data?.stations||[];}catch{return[];}
+}
 
 function trouverMeilleurTrajet(ligne,reseau,latDep,lonDep,latDest,lonDest){
   let meilleur=null,meilleurDuree=Infinity;
@@ -297,7 +300,7 @@ function trouverMeilleurTrajet(ligne,reseau,latDep,lonDep,latDest,lonDest){
   return meilleur;
 }
 
-async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott){
+async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dottStations){
   const options=[];
   const dDirecte=dist(latDep,lonDep,latDest,lonDest);
   const dureeMarche=Math.round(mToMin(dDirecte,V_MARCHE));
@@ -312,9 +315,12 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott){
         const dureeVersDott=Math.round(mToMin(dd.d,V_MARCHE));
         const dureeEnDott=Math.round(mToMin(dDirecte,V_DOTT));
         dureeMarcheOption=dureeVersDott+dureeEnDott;
+        const stationDepot=dottStations.map(s=>({...s,d:dist(latDest,lonDest,s.lat,s.lon)})).sort((a,b)=>a.d-b.d)[0];
+        const infoDepot=stationDepot?`Emplacement "${stationDepot.name}" à ${Math.round(stationDepot.d)} m`:"Emplacement réservé Dott";
         etapesMarche.push({icone:"🛴",titre:"Marchez vers la trottinette Dott",detail:`Trottinette à ${Math.round(dd.d)} m`,duree:dureeVersDott,maps:lienMaps(latDep,lonDep,dd.lat,dd.lon),couleur:"#00b4d8"});
         etapesMarche.push({icone:"🛴",titre:"Roulez jusqu’à destination",detail:`~${Math.round(dDirecte)} m en trottinette`,duree:dureeEnDott,maps:lienMaps(dd.lat,dd.lon,latDest,lonDest),couleur:"#00b4d8"});
-        etapesMarche.push({icone:"🎯",titre:"Arrivé ! Déposez la trottinette.",detail:"Zone de dépôt autorisée",duree:0,couleur:"#2e8b3a"});
+        etapesMarche.push({icone:"🛴",titre:"Déposez la trottinette",detail:infoDepot,duree:0,maps:stationDepot?lienMaps(latDest,lonDest,stationDepot.lat,stationDepot.lon):null,couleur:"#00b4d8"});
+        etapesMarche.push({icone:"🎯",titre:"Vous êtes arrivé !",detail:"",duree:0,couleur:"#2e8b3a"});
       }
     }
     if(!etapesMarche.length&&modes.velov&&velov.length){
@@ -362,7 +368,10 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott){
 
     if(modeAcces?.type==="dott"){
       const d1=Math.round(mToMin(modeAcces.bike.d,V_MARCHE)),d2=Math.round(mToMin(trajet.distVersArret,V_DOTT));
-      etapes.push({icone:"🛴",titre:`Prenez une trottinette Dott`,detail:`Trottinette à ${Math.round(modeAcces.bike.d)} m — rejoignez ${ad.nom}`,duree:d1+d2,maps:lienMaps(latDep,lonDep,modeAcces.bike.lat,modeAcces.bike.lon),couleur:"#00b4d8"});
+      const stDepotArret=dottStations.map(s=>({...s,d:dist(ad.lat,ad.lon,s.lat,s.lon)})).sort((a,b)=>a.d-b.d)[0];
+      const depotArretInfo=stDepotArret?`Déposez à "${stDepotArret.name}" (à ${Math.round(stDepotArret.d)} m de l'arrêt)`:"Emplacement réservé Dott";
+      etapes.push({icone:"🛴",titre:"Prenez une trottinette Dott",detail:`Trottinette à ${Math.round(modeAcces.bike.d)} m de vous`,duree:d1,maps:lienMaps(latDep,lonDep,modeAcces.bike.lat,modeAcces.bike.lon),couleur:"#00b4d8"});
+      etapes.push({icone:"🛴",titre:`Roulez jusqu’à ${ad.nom}`,detail:depotArretInfo,duree:d2,maps:lienMaps(modeAcces.bike.lat,modeAcces.bike.lon,ad.lat,ad.lon),couleur:"#00b4d8"});
     }else if(modeAcces?.type==="velov"){
       const d1=Math.round(mToMin(modeAcces.station.d,V_MARCHE)),d2=Math.round(mToMin(trajet.distVersArret,V_VELO));
       etapes.push({icone:"🚲",titre:`Vélo'v — station "${modeAcces.station.name}"`,detail:`${modeAcces.station.available_bikes} vélo(s) dispo — rejoignez ${ad.nom}`,duree:d1+d2,maps:lienMaps(latDep,lonDep,modeAcces.station.lat,modeAcces.station.lng),couleur:"#e8b400",dispo:modeAcces.station.available_bikes});
@@ -390,7 +399,10 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott){
 
     if(modeFin?.type==="dott"){
       const d1=Math.round(mToMin(trajet.distDepuisArret,V_DOTT));
-      etapes.push({icone:"🛴",titre:"Trottinette Dott jusqu'à destination",detail:`Trottinette à ${Math.round(modeFin.bike.d)} m de l'arrêt`,duree:d1,maps:lienMaps(aa.lat,aa.lon,latDest,lonDest),couleur:"#00b4d8"});
+      const stDepot=dottStations.map(s=>({...s,d:dist(latDest,lonDest,s.lat,s.lon)})).sort((a,b)=>a.d-b.d)[0];
+      const infoDepot2=stDepot?`Déposez à "${stDepot.name}" (à ${Math.round(stDepot.d)} m)`:"Emplacement réservé Dott";
+      etapes.push({icone:"🛴",titre:"Prenez la trottinette Dott",detail:`Trottinette à ${Math.round(modeFin.bike.d)} m de l'arrêt`,duree:d1,maps:lienMaps(aa.lat,aa.lon,modeFin.bike.lat,modeFin.bike.lon),couleur:"#00b4d8"});
+      etapes.push({icone:"🛴",titre:"Déposez la trottinette",detail:infoDepot2,duree:0,maps:stDepot?lienMaps(latDest,lonDest,stDepot.lat,stDepot.lon):null,couleur:"#00b4d8"});
     }else if(modeFin?.type==="velov"){
       const vdest=velov.filter(s=>s.available_bike_stands>0).map(s=>({...s,d:dist(latDest,lonDest,s.lat,s.lng)})).sort((a,b)=>a.d-b.d)[0];
       const d1=Math.round(mToMin(trajet.distDepuisArret,V_VELO));
@@ -418,8 +430,8 @@ async function chercher(){
   document.getElementById("etapes").innerHTML="";
   routeLayer.clearLayers();
   try{
-    const[velov,dott]=await Promise.all([modes.velov?getVelov():Promise.resolve([]),modes.dott?getDott():Promise.resolve([])]);
-    const options=await calculerItineraires(coordDepart.lat,coordDepart.lon,coordDest.lat,coordDest.lon,velov,dott);
+    const[velov,dott,dottStations]=await Promise.all([modes.velov?getVelov():Promise.resolve([]),modes.dott?getDott():Promise.resolve([]),modes.dott?getDottStations():Promise.resolve([])]);
+    const options=await calculerItineraires(coordDepart.lat,coordDepart.lon,coordDest.lat,coordDest.lon,velov,dott,dottStations);
     if(priorite==="marche"){afficherItineraire(options.find(o=>o.type==="marche")||options[0]);hideEtat();return;}
     itinerairesCalcules=options;
     hideEtat();
