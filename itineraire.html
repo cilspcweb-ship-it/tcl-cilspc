@@ -246,29 +246,150 @@ function setOnglet(id,btn){
   if(id==='app') setTimeout(()=>map&&map.invalidateSize(),100);
 }
 
+// ===================== RÉSEAU TCL COMPLET =====================
 const RESEAU_A = [
-  {nom:"Perrache",lat:45.7492,lon:4.8266},{nom:"Ampère - Victor Hugo",lat:45.7524,lon:4.8321},
-  {nom:"Bellecour",lat:45.7578,lon:4.8320},{nom:"Cordeliers",lat:45.7622,lon:4.8335},
-  {nom:"Hôtel de Ville",lat:45.7670,lon:4.8338},{nom:"Foch",lat:45.7692,lon:4.8413},
-  {nom:"Masséna",lat:45.7696,lon:4.8483},{nom:"Gratte-Ciel",lat:45.7710,lon:4.8553},
-  {nom:"Flachet",lat:45.7733,lon:4.8623},{nom:"Cusset",lat:45.7743,lon:4.8693},
+  {nom:"Perrache",lat:45.7492,lon:4.8266},
+  {nom:"Ampère - Victor Hugo",lat:45.7524,lon:4.8321},
+  {nom:"Bellecour",lat:45.7578,lon:4.8320},
+  {nom:"Cordeliers",lat:45.7622,lon:4.8335},
+  {nom:"Hôtel de Ville - Louis Pradel",lat:45.7670,lon:4.8338},
+  {nom:"Foch",lat:45.7692,lon:4.8413},
+  {nom:"Masséna",lat:45.7696,lon:4.8483},
+  {nom:"Gratte-Ciel",lat:45.7710,lon:4.8553},
+  {nom:"Flachet",lat:45.7733,lon:4.8623},
+  {nom:"Cusset",lat:45.7743,lon:4.8693},
   {nom:"Vaulx-en-Velin La Soie",lat:45.7750,lon:4.8763},
 ];
+const RESEAU_B = [
+  {nom:"Charpennes - Charles Hernu",lat:45.7696,lon:4.8563},
+  {nom:"République - Villeurbanne",lat:45.7641,lon:4.8502},
+  {nom:"Brotteaux",lat:45.7612,lon:4.8455},
+  {nom:"Bellecour",lat:45.7578,lon:4.8320},
+  {nom:"Saxe-Gambetta",lat:45.7544,lon:4.8378},
+  {nom:"Jean Macé",lat:45.7424,lon:4.8576},
+  {nom:"Gerland",lat:45.7298,lon:4.8345},
+  {nom:"Stade de Gerland",lat:45.7248,lon:4.8298},
+  {nom:"Gare de Vénissieux",lat:45.7098,lon:4.8712},
+];
+const RESEAU_C = [
+  {nom:"Cuire",lat:45.7869,lon:4.8223},
+  {nom:"Croix-Luizet",lat:45.7812,lon:4.8512},
+  {nom:"Charpennes - Charles Hernu",lat:45.7696,lon:4.8563},
+  {nom:"Brotteaux",lat:45.7612,lon:4.8455},
+  {nom:"Foch",lat:45.7692,lon:4.8413},
+  {nom:"Hôtel de Ville - Louis Pradel",lat:45.7670,lon:4.8338},
+  {nom:"Cordeliers",lat:45.7622,lon:4.8335},
+  {nom:"Bellecour",lat:45.7578,lon:4.8320},
+];
+const RESEAU_D = [
+  {nom:"Gare de Vaise",lat:45.7728,lon:4.8046},
+  {nom:"Valmy",lat:45.7698,lon:4.8098},
+  {nom:"Gorge de Loup",lat:45.7669,lon:4.8142},
+  {nom:"Vieux-Lyon - Cathédrale St-Jean",lat:45.7598,lon:4.8268},
+  {nom:"Bellecour",lat:45.7578,lon:4.8320},
+  {nom:"Guillotière",lat:45.7499,lon:4.8354},
+  {nom:"Jean Macé",lat:45.7424,lon:4.8576},
+  {nom:"Debourg",lat:45.7268,lon:4.8219},
+  {nom:"Gare d'Oullins",lat:45.7133,lon:4.8079},
+  {nom:"La Saulaie",lat:45.7042,lon:4.8026},
+];
 const RESEAU_T1 = [
-  {nom:"IUT Feyssine",lat:45.7822,lon:4.8712},{nom:"La Doua - Gaston Berger",lat:45.7773,lon:4.8636},
-  {nom:"Palais de Justice - Mairie 3e",lat:45.7594,lon:4.8485},{nom:"Saxe-Gambetta",lat:45.7544,lon:4.8378},
-  {nom:"Guillotière",lat:45.7499,lon:4.8354},{nom:"Ampère - Victor Hugo",lat:45.7524,lon:4.8321},
-  {nom:"Perrache",lat:45.7492,lon:4.8266},{nom:"Place des Archives",lat:45.7468,lon:4.8245},
-  {nom:"Sainte-Blandine",lat:45.7445,lon:4.8212},{nom:"Hôtel Région Montrochet",lat:45.7378,lon:4.8178},
-  {nom:"Musée des Confluences",lat:45.7326,lon:4.8198},{nom:"Debourg",lat:45.7268,lon:4.8219},
+  {nom:"IUT Feyssine",lat:45.7822,lon:4.8712},
+  {nom:"La Doua - Gaston Berger",lat:45.7773,lon:4.8636},
+  {nom:"Palais de Justice - Mairie 3e",lat:45.7594,lon:4.8485},
+  {nom:"Saxe-Gambetta",lat:45.7544,lon:4.8378},
+  {nom:"Guillotière",lat:45.7499,lon:4.8354},
+  {nom:"Ampère - Victor Hugo",lat:45.7524,lon:4.8321},
+  {nom:"Perrache",lat:45.7492,lon:4.8266},
+  {nom:"Place des Archives",lat:45.7468,lon:4.8245},
+  {nom:"Sainte-Blandine",lat:45.7445,lon:4.8212},
+  {nom:"Hôtel Région Montrochet",lat:45.7378,lon:4.8178},
+  {nom:"Musée des Confluences",lat:45.7326,lon:4.8198},
+  {nom:"Debourg",lat:45.7268,lon:4.8219},
 ];
 const RESEAU_T2 = [
-  {nom:"Saint-Priest Bel Air",lat:45.6942,lon:4.9412},{nom:"Hauts de Feuilly",lat:45.7342,lon:4.9012},
-  {nom:"Jean Macé",lat:45.7424,lon:4.8576},{nom:"Danton",lat:45.7456,lon:4.8467},
-  {nom:"Perrache",lat:45.7492,lon:4.8266},{nom:"Place des Archives",lat:45.7468,lon:4.8245},
-  {nom:"Sainte-Blandine",lat:45.7445,lon:4.8212},{nom:"Hôtel Région Montrochet",lat:45.7378,lon:4.8178},
+  {nom:"Saint-Priest Bel Air",lat:45.6942,lon:4.9412},
+  {nom:"Eurexpo",lat:45.7113,lon:4.9298},
+  {nom:"Hauts de Feuilly",lat:45.7342,lon:4.9012},
+  {nom:"Bachut - Mairie du 8e",lat:45.7398,lon:4.8812},
+  {nom:"Jean Macé",lat:45.7424,lon:4.8576},
+  {nom:"Danton",lat:45.7456,lon:4.8467},
+  {nom:"Perrache",lat:45.7492,lon:4.8266},
+  {nom:"Place des Archives",lat:45.7468,lon:4.8245},
+  {nom:"Sainte-Blandine",lat:45.7445,lon:4.8212},
+  {nom:"Hôtel Région Montrochet",lat:45.7378,lon:4.8178},
 ];
-const RESEAUX = {"A":RESEAU_A,"T1":RESEAU_T1,"T2":RESEAU_T2};
+const RESEAU_T3 = [
+  {nom:"Meyzieu - Les Panettes",lat:45.7712,lon:5.0023},
+  {nom:"Meyzieu - Z.I.",lat:45.7698,lon:4.9898},
+  {nom:"Décines - Grand Large",lat:45.7698,lon:4.9598},
+  {nom:"Décines - Centre",lat:45.7678,lon:4.9498},
+  {nom:"Vaulx-en-Velin La Soie",lat:45.7750,lon:4.8763},
+  {nom:"Cusset",lat:45.7743,lon:4.8693},
+  {nom:"Flachet",lat:45.7733,lon:4.8623},
+  {nom:"Gratte-Ciel",lat:45.7710,lon:4.8553},
+  {nom:"République - Villeurbanne",lat:45.7641,lon:4.8502},
+  {nom:"Charpennes - Charles Hernu",lat:45.7696,lon:4.8563},
+  {nom:"Part-Dieu - Villette",lat:45.7610,lon:4.8596},
+];
+const RESEAU_T4 = [
+  {nom:"Montessuy",lat:45.8052,lon:4.8398},
+  {nom:"La Doua - Gaston Berger",lat:45.7773,lon:4.8636},
+  {nom:"Charpennes - Charles Hernu",lat:45.7696,lon:4.8563},
+  {nom:"Part-Dieu - Villette",lat:45.7610,lon:4.8596},
+  {nom:"Garibaldi",lat:45.7545,lon:4.8539},
+  {nom:"Jean Macé",lat:45.7424,lon:4.8576},
+  {nom:"Feyssine",lat:45.7388,lon:4.8634},
+  {nom:"Hôpital Feyzin - Vénissieux",lat:45.6988,lon:4.8712},
+];
+const RESEAU_T5 = [
+  {nom:"Gare de Vaise",lat:45.7728,lon:4.8046},
+  {nom:"Valmy",lat:45.7698,lon:4.8098},
+  {nom:"Quai Claude Bernard",lat:45.7569,lon:4.8334},
+  {nom:"Hôpital Lyon Sud",lat:45.6878,lon:4.7923},
+];
+const RESEAU_T6 = [
+  {nom:"Debourg",lat:45.7268,lon:4.8219},
+  {nom:"Hôpital Femme Mère Enfant",lat:45.7298,lon:4.8345},
+  {nom:"Gerland",lat:45.7298,lon:4.8345},
+  {nom:"Jean Macé",lat:45.7424,lon:4.8576},
+  {nom:"Saxe-Gambetta",lat:45.7544,lon:4.8378},
+  {nom:"Part-Dieu - Villette",lat:45.7610,lon:4.8596},
+  {nom:"Charpennes - Charles Hernu",lat:45.7696,lon:4.8563},
+  {nom:"Campus La Doua",lat:45.7812,lon:4.8698},
+];
+
+const RESEAUX = {
+  "A":RESEAU_A, "B":RESEAU_B, "C":RESEAU_C, "D":RESEAU_D,
+  "T1":RESEAU_T1, "T2":RESEAU_T2, "T3":RESEAU_T3,
+  "T4":RESEAU_T4, "T5":RESEAU_T5, "T6":RESEAU_T6,
+};
+
+// Nœuds de correspondance : arrêts où plusieurs lignes se croisent
+const CORRESPONDANCES = {
+  "Bellecour":         ["A","B","C","D"],
+  "Charpennes - Charles Hernu": ["B","C","T3","T4","T6"],
+  "Saxe-Gambetta":     ["B","T1"],
+  "Jean Macé":         ["B","D","T2","T4","T6"],
+  "Brotteaux":         ["B","C"],
+  "Foch":              ["A","C"],
+  "Hôtel de Ville - Louis Pradel": ["A","C"],
+  "Cordeliers":        ["A","C"],
+  "Guillotière":       ["D","T1"],
+  "Perrache":          ["A","T1","T2"],
+  "Ampère - Victor Hugo": ["A","T1"],
+  "Debourg":           ["D","T1","T6"],
+  "Gerland":           ["B","T6"],
+  "Vaulx-en-Velin La Soie": ["A","T3"],
+  "Cusset":            ["A","T3"],
+  "Flachet":           ["A","T3"],
+  "Gratte-Ciel":       ["A","T3"],
+  "République - Villeurbanne": ["B","T3"],
+  "Part-Dieu - Villette": ["T3","T4","T6"],
+  "La Doua - Gaston Berger": ["T1","T4"],
+  "Gare de Vaise":     ["D","T5"],
+  "Valmy":             ["D","T5"],
+};
 
 const V_MARCHE=1.2,V_VELO=3.5,V_DOTT=4.0,V_METRO=10.0,V_TRAM=7.0,ATTENTE_TCL=3;
 const SEUIL_MODE=600; // distance min pour proposer Vélov/Dott
@@ -395,12 +516,16 @@ async function getDottStations(){
   try{const r=await fetch("https://gbfs.api.ridedott.com/public/v2/lyon/station_information.json");const d=await r.json();return d.data?.stations||[];}catch{return[];}
 }
 
+function vitesseLigne(l){const u=String(l).toUpperCase();if(["A","B","C","D"].includes(u))return V_METRO;if(/^T\d/.test(u))return V_TRAM;return 5.5;}
+
+// Trouver le meilleur trajet DIRECT sur une seule ligne
 function trouverMeilleurTrajet(ligne,reseau,latDep,lonDep,latDest,lonDest){
   let meilleur=null,meilleurDuree=Infinity;
   const dDirecte=dist(latDep,lonDep,latDest,lonDest);
   for(let i=0;i<reseau.length;i++){
     const ad=reseau[i];
     const dVersArret=dist(latDep,lonDep,ad.lat,ad.lon);
+    if(dVersArret>1500)continue;
     for(let j=0;j<reseau.length;j++){
       if(j===i)continue;
       const aa=reseau[j];
@@ -409,8 +534,6 @@ function trouverMeilleurTrajet(ligne,reseau,latDep,lonDep,latDest,lonDest){
       let distTCL=0;
       for(let k=iMin;k<iMax;k++) distTCL+=dist(reseau[k].lat,reseau[k].lon,reseau[k+1].lat,reseau[k+1].lon);
       if(distTCL<100)continue;
-      // Rejeter seulement si l'arrêt de départ est clairement dans la mauvaise direction
-      if(dVersArret>1500)continue;
       const dureeTCL=mToMin(distTCL,vitesseLigne(ligne))+ATTENTE_TCL;
       const dureeTotal=mToMin(dVersArret,V_MARCHE)+dureeTCL+mToMin(dArretDest,V_MARCHE);
       if(dureeTotal<meilleurDuree){
@@ -423,6 +546,80 @@ function trouverMeilleurTrajet(ligne,reseau,latDep,lonDep,latDest,lonDest){
           distVersArret:Math.round(dVersArret),
           distDepuisArret:Math.round(dArretDest),
           sensAller:j>i};
+      }
+    }
+  }
+  return meilleur;
+}
+
+// Trouver le meilleur trajet avec UNE correspondance
+function trouverTrajetAvecCorrespondance(latDep,lonDep,latDest,lonDest){
+  let meilleur=null,meilleurDuree=Infinity;
+  const dDirecte=dist(latDep,lonDep,latDest,lonDest);
+
+  for(const [nomCorr,lignesCorr] of Object.entries(CORRESPONDANCES)){
+    if(lignesCorr.length<2)continue;
+    // Trouver l'arrêt de correspondance dans chaque réseau
+    for(let li=0;li<lignesCorr.length;li++){
+      const ligne1=lignesCorr[li];
+      const reseau1=RESEAUX[ligne1];
+      if(!reseau1)continue;
+      const arretCorr1=reseau1.find(a=>a.nom===nomCorr||a.nom.startsWith(nomCorr.split(" ")[0]));
+      if(!arretCorr1)continue;
+
+      for(let lj=0;lj<lignesCorr.length;lj++){
+        if(lj===li)continue;
+        const ligne2=lignesCorr[lj];
+        const reseau2=RESEAUX[ligne2];
+        if(!reseau2)continue;
+        const arretCorr2=reseau2.find(a=>a.nom===nomCorr||a.nom.startsWith(nomCorr.split(" ")[0]));
+        if(!arretCorr2)continue;
+
+        // Chercher meilleur arrêt départ sur ligne1
+        for(let i=0;i<reseau1.length;i++){
+          const ad=reseau1[i];
+          const dVersArret=dist(latDep,lonDep,ad.lat,ad.lon);
+          if(dVersArret>1200)continue;
+          const iCorr=reseau1.indexOf(arretCorr1);
+          if(iCorr<0)continue;
+          const iMin1=Math.min(i,iCorr),iMax1=Math.max(i,iCorr);
+          let dist1=0;
+          for(let k=iMin1;k<iMax1;k++) dist1+=dist(reseau1[k].lat,reseau1[k].lon,reseau1[k+1].lat,reseau1[k+1].lon);
+          if(dist1<100)continue;
+          const duree1=mToMin(dist1,vitesseLigne(ligne1))+ATTENTE_TCL;
+
+          // Chercher meilleur arrêt arrivée sur ligne2
+          for(let j=0;j<reseau2.length;j++){
+            const aa=reseau2[j];
+            const dArretDest=dist(latDest,lonDest,aa.lat,aa.lon);
+            if(dArretDest>1200)continue;
+            const jCorr=reseau2.indexOf(arretCorr2);
+            if(jCorr<0)continue;
+            const jMin2=Math.min(jCorr,j),jMax2=Math.max(jCorr,j);
+            let dist2=0;
+            for(let k=jMin2;k<jMax2;k++) dist2+=dist(reseau2[k].lat,reseau2[k].lon,reseau2[k+1].lat,reseau2[k+1].lon);
+            if(dist2<100)continue;
+            const duree2=mToMin(dist2,vitesseLigne(ligne2))+ATTENTE_TCL;
+
+            const dureeTotal=mToMin(dVersArret,V_MARCHE)+duree1+2+duree2+mToMin(dArretDest,V_MARCHE); // +2min correspondance
+            if(dureeTotal<meilleurDuree && dureeTotal < mToMin(dDirecte,V_MARCHE)*0.85){
+              meilleurDuree=dureeTotal;
+              meilleur={
+                type:"correspondance",
+                ligne1,arretDepart:ad,arretCorrL1:arretCorr1,
+                ligne2,arretCorrL2:arretCorr2,arretArrivee:aa,
+                nomCorrespondance:nomCorr,
+                dureeVersArret:Math.round(mToMin(dVersArret,V_MARCHE)),
+                duree1:Math.round(duree1),
+                duree2:Math.round(duree2),
+                dureeDepuisArret:Math.round(mToMin(dArretDest,V_MARCHE)),
+                dureeTotal:Math.round(dureeTotal),
+                distVersArret:Math.round(dVersArret),
+                distDepuisArret:Math.round(dArretDest),
+              };
+            }
+          }
+        }
       }
     }
   }
@@ -476,6 +673,7 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
   options.push({type:"marche",label:labelOption,duree:dureeMarcheOption,detail:`${Math.round(dDirecte)} m`,etapes:etapesMarche,trace:[[latDep,lonDep],[latDest,lonDest]]});
   if(!modes.tcl)return options;
 
+  // Trajets directs sur chaque ligne
   for(const[ligne,reseau]of Object.entries(RESEAUX)){
     const trajet=trouverMeilleurTrajet(ligne,reseau,latDep,lonDep,latDest,lonDest);
     if(!trajet)continue;
@@ -555,6 +753,41 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
 
     etapes.push({icone:"🎯",titre:"Vous êtes arrivé !",detail:"",duree:0,couleur:"#2e8b3a"});
     options.push({type:"tcl",label:`🚇 Ligne ${ligne}`,ligne,duree:trajet.dureeTotal,detail:`${ad.nom} → ${aa.nom}`,etapes,trace:[[latDep,lonDep],[ad.lat,ad.lon],[aa.lat,aa.lon],[latDest,lonDest]]});
+  }
+
+  // Trajet avec correspondance
+  const trajCorr=trouverTrajetAvecCorrespondance(latDep,lonDep,latDest,lonDest);
+  if(trajCorr){
+    const ad=trajCorr.arretDepart,aa=trajCorr.arretArrivee;
+    const couleur1=couleurLigne(trajCorr.ligne1),couleur2=couleurLigne(trajCorr.ligne2);
+    const etapesC=[];
+
+    // Accès à l'arrêt de départ
+    if(trajCorr.distVersArret>SEUIL_MODE){
+      if(modes.dott&&dott.length){
+        const dd=dott.map(b=>({...b,d:dist(latDep,lonDep,b.lat,b.lon)})).sort((a,b)=>a.d-b.d)[0];
+        if(dd&&dd.d<600) etapesC.push({icone:"🛴",titre:"Prenez une trottinette Dott",detail:`Trottinette à ${Math.round(dd.d)} m`,duree:Math.round(mToMin(dd.d,V_MARCHE)+mToMin(trajCorr.distVersArret,V_DOTT)),maps:lienMaps(latDep,lonDep,dd.lat,dd.lon),couleur:"#00b4d8"});
+      }
+    }
+    if(!etapesC.length) etapesC.push({icone:"🚶",titre:`Marchez jusqu’à ${ad.nom}`,detail:`${trajCorr.distVersArret} m`,duree:trajCorr.dureeVersArret,maps:lienMaps(latDep,lonDep,ad.lat,ad.lon),couleur:"#7a6a5a"});
+
+    // Ligne 1
+    const terminus1=RESEAUX[trajCorr.ligne1][RESEAUX[trajCorr.ligne1].indexOf(trajCorr.arretCorrL1)>RESEAUX[trajCorr.ligne1].indexOf(ad)?RESEAUX[trajCorr.ligne1].length-1:0].nom;
+    etapesC.push({icone:"🚇",titre:`Ligne ${trajCorr.ligne1} → direction ${terminus1}`,detail:`De ${ad.nom} jusqu’à ${trajCorr.nomCorrespondance} — ~${trajCorr.duree1} min`,duree:trajCorr.duree1,ligne:trajCorr.ligne1,couleur:couleur1});
+    etapesC.push({icone:"🔄",titre:`Correspondance à ${trajCorr.nomCorrespondance}`,detail:`Changez pour la ligne ${trajCorr.ligne2}`,duree:2,couleur:"#7a6a5a"});
+
+    // Ligne 2
+    const iCorr2=RESEAUX[trajCorr.ligne2].indexOf(trajCorr.arretCorrL2);
+    const iArr2=RESEAUX[trajCorr.ligne2].indexOf(aa);
+    const terminus2=iArr2>iCorr2?RESEAUX[trajCorr.ligne2][RESEAUX[trajCorr.ligne2].length-1].nom:RESEAUX[trajCorr.ligne2][0].nom;
+    etapesC.push({icone:"🚇",titre:`Ligne ${trajCorr.ligne2} → direction ${terminus2}`,detail:`De ${trajCorr.nomCorrespondance} jusqu’à ${aa.nom} — ~${trajCorr.duree2} min`,duree:trajCorr.duree2,ligne:trajCorr.ligne2,couleur:couleur2});
+    etapesC.push({icone:"📍",titre:`Descendez à ${aa.nom}`,detail:"",duree:0,couleur:couleur2});
+
+    // Fin
+    if(trajCorr.distDepuisArret>50) etapesC.push({icone:"🚶",titre:"Marchez jusqu’à votre destination",detail:`${trajCorr.distDepuisArret} m`,duree:trajCorr.dureeDepuisArret,maps:lienMaps(aa.lat,aa.lon,latDest,lonDest),couleur:"#7a6a5a"});
+    etapesC.push({icone:"🎯",titre:"Vous êtes arrivé !",detail:"",duree:0,couleur:"#2e8b3a"});
+
+    options.push({type:"tcl",label:`🚇 ${trajCorr.ligne1}→${trajCorr.ligne2} (corresp.)`,ligne:trajCorr.ligne1,duree:trajCorr.dureeTotal,detail:`${ad.nom} → ${trajCorr.nomCorrespondance} → ${aa.nom}`,etapes:etapesC,trace:[[latDep,lonDep],[ad.lat,ad.lon],[trajCorr.arretCorrL1.lat,trajCorr.arretCorrL1.lon],[aa.lat,aa.lon],[latDest,lonDest]]});
   }
 
   options.sort((a,b)=>a.duree-b.duree);
