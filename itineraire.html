@@ -207,11 +207,13 @@ let itinerairesCalcules = [];
 
 // ===================== CARTE =====================
 window.addEventListener("load", () => {
+  // Double requestAnimationFrame garantit que le DOM est rendu avant Leaflet
+  requestAnimationFrame(() => requestAnimationFrame(() => {
   map = L.map("map", { zoomControl: true }).setView([45.7492, 4.8266], 14);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap", maxZoom:19 }).addTo(map);
-  setTimeout(() => map.invalidateSize(), 300);
   markersLayer = L.layerGroup().addTo(map);
   routeLayer = L.layerGroup().addTo(map);
+  setTimeout(() => map.invalidateSize(), 200);
 
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(pos => {
@@ -252,6 +254,7 @@ window.addEventListener("load", () => {
     ajouterMarqueur(coord.lat, coord.lon, "🎯", "Destination");
     map.setView([coord.lat, coord.lon], 13);
   });
+})); // fermeture requestAnimationFrame + addEventListener
 });
 
 function ajouterMarqueur(lat, lon, emoji, titre) {
