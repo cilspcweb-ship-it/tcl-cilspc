@@ -302,31 +302,39 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott){
   const dDirecte=dist(latDep,lonDep,latDest,lonDest);
   const dureeMarche=Math.round(mToMin(dDirecte,V_MARCHE));
 
-  // Option marche directe — avec Dott/Velov si dispo et distance > 600m
+  // Option marche directe
   let etapesMarche=[];
+  let dureeMarcheOption=dureeMarche;
   if(dDirecte>600){
     if(modes.dott&&dott.length){
       const dd=dott.map(b=>({...b,d:dist(latDep,lonDep,b.lat,b.lon)})).sort((a,b)=>a.d-b.d)[0];
       if(dd&&dd.d<600){
+        const dureeVersDott=Math.round(mToMin(dd.d,V_MARCHE));
         const dureeEnDott=Math.round(mToMin(dDirecte,V_DOTT));
-        etapesMarche.push({icone:"🛴",titre:"Prenez une trottinette Dott",detail:`Trottinette à ${Math.round(dd.d)} m`,duree:Math.round(mToMin(dd.d,V_MARCHE))+dureeEnDott,maps:lienMaps(latDep,lonDep,dd.lat,dd.lon),couleur:"#00b4d8"});
+        dureeMarcheOption=dureeVersDott+dureeEnDott;
+        etapesMarche.push({icone:"🛴",titre:"Marchez vers la trottinette Dott",detail:`Trottinette à ${Math.round(dd.d)} m`,duree:dureeVersDott,maps:lienMaps(latDep,lonDep,dd.lat,dd.lon),couleur:"#00b4d8"});
+        etapesMarche.push({icone:"🛴",titre:"Roulez jusqu’à destination",detail:`~${Math.round(dDirecte)} m en trottinette`,duree:dureeEnDott,maps:lienMaps(dd.lat,dd.lon,latDest,lonDest),couleur:"#00b4d8"});
+        etapesMarche.push({icone:"🎯",titre:"Arrivé ! Déposez la trottinette.",detail:"Zone de dépôt autorisée",duree:0,couleur:"#2e8b3a"});
       }
     }
     if(!etapesMarche.length&&modes.velov&&velov.length){
       const vd=velov.filter(s=>s.available_bikes>0).map(s=>({...s,d:dist(latDep,lonDep,s.lat,s.lng)})).sort((a,b)=>a.d-b.d)[0];
       if(vd&&vd.d<600){
+        const vdest=velov.filter(s=>s.available_bike_stands>0).map(s=>({...s,d:dist(latDest,lonDest,s.lat,s.lng)})).sort((a,b)=>a.d-b.d)[0];
+        const dureeVersVelo=Math.round(mToMin(vd.d,V_MARCHE));
         const dureeEnVelo=Math.round(mToMin(dDirecte,V_VELO));
-        etapesMarche.push({icone:"🚲",titre:`Vélo'v — station "${vd.name}"`,detail:`${vd.available_bikes} vélo(s) dispo`,duree:Math.round(mToMin(vd.d,V_MARCHE))+dureeEnVelo,maps:lienMaps(latDep,lonDep,vd.lat,vd.lng),couleur:"#e8b400",dispo:vd.available_bikes});
+        dureeMarcheOption=dureeVersVelo+dureeEnVelo;
+        etapesMarche.push({icone:"🚲",titre:`Vélo'v — station "${vd.name}"`,detail:`${vd.available_bikes} vélo(s) à ${Math.round(vd.d)} m`,duree:dureeVersVelo,maps:lienMaps(latDep,lonDep,vd.lat,vd.lng),couleur:"#e8b400",dispo:vd.available_bikes});
+        etapesMarche.push({icone:"🚲",titre:"Pédalez jusqu’à destination",detail:vdest?`Déposez à "${vdest.name}" (${vdest.available_bike_stands} place(s))`:`~${Math.round(dDirecte)} m`,duree:dureeEnVelo,maps:lienMaps(vd.lat,vd.lng,latDest,lonDest),couleur:"#e8b400"});
+        etapesMarche.push({icone:"🎯",titre:"Vous êtes arrivé !",detail:"",duree:0,couleur:"#2e8b3a"});
       }
     }
   }
-  etapesMarche.push({icone:"🚶",titre:"Marchez jusqu'à votre destination",detail:`${Math.round(dDirecte)} m`,duree:dureeMarche,maps:lienMaps(latDep,lonDep,latDest,lonDest),couleur:"#7a6a5a"});
-  etapesMarche.push({icone:"🎯",titre:"Vous êtes arrivé !",detail:"",duree:0,couleur:"#2e8b3a"});
-  const dureeMarcheOption = etapesMarche.length > 1 && etapesMarche[0].icone !== "🚶"
-    ? etapesMarche[0].duree + (etapesMarche[1].icone === "🚶" ? etapesMarche[1].duree : 0)
-    : dureeMarche;
+  if(!etapesMarche.length){
+    etapesMarche.push({icone:"🚶",titre:"Marchez jusqu’à votre destination",detail:`${Math.round(dDirecte)} m`,duree:dureeMarche,maps:lienMaps(latDep,lonDep,latDest,lonDest),couleur:"#7a6a5a"});
+    etapesMarche.push({icone:"🎯",titre:"Vous êtes arrivé !",detail:"",duree:0,couleur:"#2e8b3a"});
+  }
   options.push({type:"marche",label:"🚶 À pied",duree:dureeMarcheOption,detail:`${Math.round(dDirecte)} m`,etapes:etapesMarche,trace:[[latDep,lonDep],[latDest,lonDest]]});
-
   if(!modes.tcl)return options;
 
   for(const[ligne,reseau]of Object.entries(RESEAUX)){
