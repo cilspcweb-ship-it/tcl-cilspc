@@ -217,8 +217,9 @@ window.addEventListener("load", () => {
     navigator.geolocation.getCurrentPosition(pos => {
       coordDepart = { lat: pos.coords.latitude, lon: pos.coords.longitude };
       document.getElementById("input-depart").value = "Ma position actuelle";
-      map.setView([coordDepart.lat, coordDepart.lon], 15);
       ajouterMarqueur(coordDepart.lat, coordDepart.lon, "📍", "Votre position");
+      map.setView([coordDepart.lat, coordDepart.lon], 15);
+      map.invalidateSize();
     });
   }
 
