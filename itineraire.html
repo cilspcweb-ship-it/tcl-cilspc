@@ -183,7 +183,7 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
     <br>
     <div class="tuto-etape">
       <div class="tuto-num">A</div>
-      <div class="tuto-content"><span class="tuto-chip bordeaux">⚡ Le plus rapide</span> — combine tous les modes disponibles pour minimiser le temps total</div>
+      <div class="tuto-content"><span class="tuto-chip bordeaux">⚡ Le plus rapide</span> — combine tous les modes disponibles pour minimiser le temps total. L'algorithme trouve automatiquement les correspondances optimales.</div>
     </div>
     <div class="tuto-etape">
       <div class="tuto-num">B</div>
@@ -191,50 +191,53 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
     </div>
     <div class="tuto-etape">
       <div class="tuto-num">C</div>
-      <div class="tuto-content"><span class="tuto-chip grey">🪑 Peu marcher</span> — favorise les transports pour minimiser la marche</div>
+      <div class="tuto-content"><span class="tuto-chip grey">🪑 Peu marcher</span> — favorise les transports pour minimiser la marche à pied</div>
     </div>
   </div>
 
   <div class="tuto-section">
     <div class="tuto-titre">4️⃣ Les modes de transport</div>
-    <div class="tuto-texte">Dans l'onglet <strong>Itinéraire</strong>, cliquez sur un ou plusieurs modes pour les activer ou désactiver. Un mode <strong>encadré en bordeaux</strong> est actif, grisé = inactif. Vous pouvez combiner plusieurs modes ensemble.</div>
+    <div class="tuto-texte">Cliquez sur un ou plusieurs modes pour les activer ou désactiver. Un mode <strong>encadré en bordeaux</strong> est actif, grisé = inactif.</div>
     <br>
     <div class="tuto-etape">
       <div class="tuto-num" style="background:#e05c00">T</div>
-      <div class="tuto-content"><span class="tuto-chip" style="border:1.5px solid var(--bordeaux);color:var(--bordeaux)"><span class="tuto-dot" style="background:#e05c00"></span>Métro/Tram</span> — Métro (A, B, C, D) et tramway (T1 à T6) du réseau TCL Lyon</div>
+      <div class="tuto-content"><span class="tuto-chip" style="border:1.5px solid var(--bordeaux);color:var(--bordeaux)"><span class="tuto-dot" style="background:#e05c00"></span>Métro/Tram</span> — Métro (A, B, C, D) et tramways (T1 à T7) du réseau TCL Lyon. Correspond à toute la Métropole lyonnaise.</div>
     </div>
     <div class="tuto-etape">
       <div class="tuto-num" style="background:#c0392b">B</div>
-      <div class="tuto-content"><span class="tuto-chip" style="border:1.5px solid var(--bordeaux);color:var(--bordeaux)"><span class="tuto-dot" style="background:#c0392b"></span>Bus</span> — Lignes de bus Chrono TCL à haute fréquence (C1 à C26). Couvrent toute la métropole lyonnaise</div>
+      <div class="tuto-content"><span class="tuto-chip" style="border:1.5px solid var(--bordeaux);color:var(--bordeaux)"><span class="tuto-dot" style="background:#c0392b"></span>Bus</span> — Lignes de bus Chrono TCL à haute fréquence (C1 à C26). Proposées uniquement si elles apportent un gain réel par rapport au métro/tram.</div>
     </div>
     <div class="tuto-etape">
       <div class="tuto-num" style="background:#e8b400">V</div>
-      <div class="tuto-content"><span class="tuto-chip" style="border:1.5px solid var(--bordeaux);color:var(--bordeaux)"><span class="tuto-dot" style="background:#e8b400"></span>Vélo'v</span> — Vélos en libre-service. Nécessite un abonnement ou un paiement à la station</div>
+      <div class="tuto-content"><span class="tuto-chip" style="border:1.5px solid var(--bordeaux);color:var(--bordeaux)"><span class="tuto-dot" style="background:#e8b400"></span>Vélo'v</span> — Vélos en libre-service. Proposé pour rejoindre un arrêt distant (> 600 m) si cela fait gagner au moins 3 minutes.</div>
     </div>
     <div class="tuto-etape">
       <div class="tuto-num" style="background:#00b4d8">D</div>
-      <div class="tuto-content"><span class="tuto-chip" style="border:1.5px solid var(--bordeaux);color:var(--bordeaux)"><span class="tuto-dot" style="background:#00b4d8"></span>Dott</span> — Trottinettes électriques. À déposer obligatoirement dans un emplacement réservé Dott</div>
+      <div class="tuto-content"><span class="tuto-chip" style="border:1.5px solid var(--bordeaux);color:var(--bordeaux)"><span class="tuto-dot" style="background:#00b4d8"></span>Dott</span> — Trottinettes électriques. À déposer obligatoirement dans un emplacement réservé Dott à destination.</div>
     </div>
-    <div class="tuto-note">💡 <strong>Combinaisons :</strong> TCL, Bus, Vélo'v et Dott peuvent être combinés entre eux si vous les cochez. Par exemple : Bus jusqu'à un arrêt de métro, puis métro jusqu'à destination. Par exemple : Dott pour rejoindre un arrêt TCL, puis TCL jusqu'à destination. Plus vous cochez de modes, plus l'itinéraire proposé sera optimisé.</div>
-    <div class="tuto-note" style="margin-top:6px">⚠️ Pour le Vélo'v et Dott, la disponibilité est en temps réel. Si aucun véhicule n'est disponible à moins de 600m, l'alternative marche est proposée.</div>
+    <div class="tuto-note">💡 <strong>Correspondances automatiques :</strong> l'algorithme explore tout le réseau TCL et trouve les meilleures correspondances sans liste prédéfinie — même sur 2 ou 3 lignes enchaînées.</div>
+    <div class="tuto-note" style="margin-top:6px">⚠️ Vélo'v et Dott ne sont pas proposés en complément d'un trajet TCL en fin de trajet — uniquement pour accéder à un arrêt éloigné en début de trajet ou comme alternative complète.</div>
   </div>
 
   <div class="tuto-section">
     <div class="tuto-titre">5️⃣ Les résultats</div>
     <div class="tuto-texte">
-      Après avoir cliqué sur <span class="tuto-chip bordeaux">Trouver mon itinéraire →</span>, plusieurs options apparaissent :<br><br>
+      Après avoir cliqué sur <span class="tuto-chip bordeaux">Trouver mon itinéraire →</span>, jusqu'à 3 options apparaissent classées par durée :<br><br>
       — Cliquez sur une option pour voir le détail des étapes<br>
-      — Chaque étape a un bouton <strong>📱 Guider vers ce point</strong> qui ouvre Google Maps pour vous guider précisément<br>
-      — La carte affiche le trajet en pointillés (marche) et trait plein (transport)
+      — Chaque étape a un bouton <strong>📱 Guider vers ce point</strong> qui ouvre Google Maps<br>
+      — La carte affiche le trajet : pointillés = marche, trait plein = transport<br>
+      — La marche finale depuis le dernier arrêt est toujours inférieure à 600 m
     </div>
-    <div class="tuto-note">💡 Les durées sont estimées. Prévoyez 2-3 min d'attente supplémentaires pour le TCL.</div>
+    <div class="tuto-note">💡 Si le badge <span style="background:#2e8b3a;color:#fff;padding:1px 6px;border-radius:10px;font-size:11px">⏱ Temps réel</span> apparaît, les durées d'attente TCL sont basées sur les vrais passages en direct.</div>
   </div>
 
   <div class="tuto-section">
     <div class="tuto-titre">🔄 Données en temps réel</div>
     <div class="tuto-texte">
-      Les disponibilités Vélo'v et Dott sont récupérées en direct à chaque calcul. Les passages TCL ne sont pas consultés en temps réel dans cet outil — utilisez l'onglet <strong>Passages TCL</strong> sur le site pour les horaires exacts.
+      Les disponibilités <strong>Vélo'v</strong> et <strong>Dott</strong> sont récupérées en direct à chaque calcul.<br><br>
+      Les <strong>prochains passages TCL</strong> sont également consultés en temps réel via l'API Grand Lyon pour affiner les durées d'attente — si disponibles, ils remplacent les 3 minutes d'attente forfaitaires et le badge <span style="background:#2e8b3a;color:#fff;padding:1px 6px;border-radius:10px;font-size:11px">⏱ Temps réel</span> s'affiche.
     </div>
+    <div class="tuto-note">💡 L'algorithme de routage est un <strong>Dijkstra sur graphe TCL</strong> — il explore l'ensemble des 565 arrêts et 72 séquences de lignes pour trouver le chemin optimal, correspondances comprises.</div>
   </div>
 </div><!-- fin panel-aide -->
 
@@ -2198,8 +2201,10 @@ function construireGraphe(modesTCL){
       if(ni.cle===nj.cle) continue;
       const d=dist(ni.arret.lat,ni.arret.lon,nj.arret.lat,nj.arret.lon);
       if(d>500) continue;
-      // Transfert à pied + attente (2 min correspondance + ATTENTE_TCL prochaine ligne)
-      const poidsTransfert=mToMin(d,V_MARCHE)+2+ATTENTE_TCL;
+      // Arrêts < 50m = même quai physique : pas de marche, juste attente prochaine ligne
+      // Arrêts 50-500m : marche + correspondance + attente
+      const marcheMin=d<50?0:mToMin(d,V_MARCHE);
+      const poidsTransfert=marcheMin+2+ATTENTE_TCL;
       addEdge(ni.id,nj.id,poidsTransfert,{type:"transfert",distM:d});
       addEdge(nj.id,ni.id,poidsTransfert,{type:"transfert",distM:d});
     }
@@ -2509,6 +2514,8 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
     // Si aucun résultat avec 600m, tenter avec 900m (zones peu desservies comme Gerland)
     if(!r) r=dijkstraTCL(latDep,lonDep,latDest,lonDest,{tcl:modes.tcl,chrono:modes.chrono},lignesExclues,900);
     if(!r) break;
+    // Ignorer les résultats sans aucun tronçon TCL réel (passes vides après exclusions)
+    if(!r.troncons.some(t=>t.type==="tcl")) break;
     trouveResultat=true;
     const opt=construireEtapesDepuisResultat(r,velov,dott,dottStations);
     if(!options.some(o=>o._lignesId===opt._lignesId)) options.push(opt);
