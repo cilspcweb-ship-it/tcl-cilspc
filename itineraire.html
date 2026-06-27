@@ -277,8 +277,10 @@ function trouverMeilleurTrajet(ligne,reseau,latDep,lonDep,latDest,lonDest){
       let distTCL=0;
       for(let k=iMin;k<iMax;k++) distTCL+=dist(reseau[k].lat,reseau[k].lon,reseau[k+1].lat,reseau[k+1].lon);
       if(distTCL<100)continue;
-      // Accepte l'arrêt de départ si < 1km, ou si dans la bonne direction
-      if(dVersArret>1000&&dVersArret>dDirecte*1.5)continue;
+      // L'arrêt de départ doit être plus proche que l'arrêt d'arrivée du départ
+      if(dVersArret>=dist(latDep,lonDep,aa.lat,aa.lon))continue;
+      // Accepte l'arrêt si < 1km du départ ou dans la bonne direction générale
+      if(dVersArret>1000&&dVersArret>dDirecte*1.2)continue;
       const dureeTCL=mToMin(distTCL,vitesseLigne(ligne))+ATTENTE_TCL;
       const dureeTotal=mToMin(dVersArret,V_MARCHE)+dureeTCL+mToMin(dArretDest,V_MARCHE);
       if(dureeTotal<meilleurDuree){
