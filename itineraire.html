@@ -2123,155 +2123,255 @@ async function getDottStations(){
   try{const r=await fetch("https://gbfs.api.ridedott.com/public/v2/lyon/station_information.json");const d=await r.json();return d.data?.stations||[];}catch{return[];}
 }
 
-// Trouver le meilleur trajet DIRECT sur une seule ligne
-// Score pondéré : durée réelle − bonus de priorité (métro > tram > bus)
-function trouverMeilleurTrajet(ligne,reseau,latDep,lonDep,latDest,lonDest){
-  let meilleur=null,meilleurScore=Infinity;
-  const nomLigne=nomLignePropre(ligne);
-  const dDirecte=dist(latDep,lonDep,latDest,lonDest);
-  const isBusLigne=nomLigne.startsWith("C")&&nomLigne.length>1;
-  const isMetro=["A","B","C","D"].includes(nomLigne);
-  const isTram=/^T\d/.test(nomLigne);
-  // Seuil dest plus tolérant pour trams/métros (desservent l'excentré)
-  const seuilArretDest=isBusLigne?1200:(isTram?1600:1400);
-  // Bonus en minutes soustrait du score pour favoriser métro > tram > bus
-  const bonusPriorite=isMetro?3:isTram?1.5:0;
 
-  for(let i=0;i<reseau.length;i++){
-    const ad=reseau[i];
-    const dVersArret=dist(latDep,lonDep,ad.lat,ad.lon);
-    if(dVersArret>1500)continue;
-    for(let j=0;j<reseau.length;j++){
-      if(j===i)continue;
-      if(j<=i)continue; // GTFS ordonné : toujours aller
-      const aa=reseau[j];
-      const dArretDest=dist(latDest,lonDest,aa.lat,aa.lon);
-      if(dArretDest>seuilArretDest)continue;
-      // Bus : ne proposer que si destination hors couverture métro/tram
-      if(isBusLigne){
-        const metroTramProche=Object.entries(RESEAUX).some(([lg,rs])=>{
-          const nm=nomLignePropre(lg);
-          if(nm.startsWith("C")&&nm.length>1)return false;
-          return rs.some(a=>dist(latDest,lonDest,a.lat,a.lon)<1200);
-        });
-        if(metroTramProche)continue;
+// ============================================================
+// MOTEUR DIJKSTRA — remplace trouverMeilleurTrajet + trouverTrajetAvecCorrespondance
+// ============================================================
+// Structure du graphe :
+//   Nœuds   : un par arrêt×ligne  →  id = "CLE_LIGNE:INDEX_ARRET"
+//              + nœud virtuel SOURCE et DEST
+//   Arêtes  : 
+//     - segment TCL entre arrêt[i] et arrêt[i+1]  (pondéré par vitesse ligne)
+//     - transfert à pied entre arrêts de même nom sur lignes différentes (2 min)
+//     - transfert à pied entre arrêts proches (< 300m) sur lignes différentes
+//     - accès depuis départ vers chaque arrêt (marche, poids = mToMin)
+//     - sortie depuis chaque arrêt vers destination (marche, poids = mToMin)
+// Dijkstra classique avec MinHeap (tableau trié) sur ce graphe.
+// ============================================================
+
+// Bonus de priorité en minutes : métro > tram > bus
+function bonusLigne(cle){
+  const u=nomLignePropre(cle);
+  if(["A","B","C","D"].includes(u)) return 3;
+  if(/^T\d/.test(u)) return 1.5;
+  return 0;
+}
+
+// Construction du graphe TCL (faite une seule fois, mise en cache)
+let _graphe=null;
+function construireGraphe(modesTCL){
+  // modesTCL = {tcl, chrono} — filtre les lignes autorisées
+  const noeuds={};  // id → {id, ligne, arrêt, lat, lon}
+  const adj={};     // id → [{to, poids, type, ligne, distM}]
+
+  function addNode(id, data){ noeuds[id]=data; if(!adj[id]) adj[id]=[]; }
+  function addEdge(from, to, poids, meta){
+    if(!adj[from]) adj[from]=[];
+    adj[from].push({to, poids, ...meta});
+  }
+
+  // 1. Créer les nœuds et arêtes TCL
+  for(const [cle, reseau] of Object.entries(RESEAUX)){
+    const nom=nomLignePropre(cle);
+    const isBus=nom.startsWith("C")&&nom.length>1;
+    const isMetroTram=["A","B","C","D","T1","T2","T3","T4","T5","T6","T7"].includes(nom);
+    if(isBus && !modesTCL.chrono) continue;
+    if(isMetroTram && !modesTCL.tcl) continue;
+    if(!isBus && !isMetroTram) continue;
+
+    const v=vitesseLigne(cle);
+    const bonus=bonusLigne(cle);
+
+    for(let i=0;i<reseau.length;i++){
+      const a=reseau[i];
+      const id=`${cle}:${i}`;
+      addNode(id,{id,cle,nom,arret:a,idx:i});
+
+      if(i<reseau.length-1){
+        const b=reseau[i+1];
+        const d=dist(a.lat,a.lon,b.lat,b.lon);
+        const poids=mToMin(d,v)-bonus/reseau.length; // bonus réparti sur chaque segment
+        addEdge(id,`${cle}:${i+1}`,poids,{type:"tcl",cle,distM:d});
       }
-      const iMin=Math.min(i,j),iMax=Math.max(i,j);
+    }
+  }
+
+  // 2. Correspondances entre arrêts proches (< 500m) sur lignes différentes
+  // 500m couvre les arrêts homonymes avec noms légèrement différents (ex: "Hôtel de Ville L. Pradel" ↔ "Hôtel de Ville - Louis Pradel")
+  const nodeList=Object.values(noeuds);
+  for(let i=0;i<nodeList.length;i++){
+    const ni=nodeList[i];
+    for(let j=i+1;j<nodeList.length;j++){
+      const nj=nodeList[j];
+      if(ni.cle===nj.cle) continue;
+      const d=dist(ni.arret.lat,ni.arret.lon,nj.arret.lat,nj.arret.lon);
+      if(d>500) continue;
+      // Transfert à pied + attente (2 min correspondance + ATTENTE_TCL prochaine ligne)
+      const poidsTransfert=mToMin(d,V_MARCHE)+2+ATTENTE_TCL;
+      addEdge(ni.id,nj.id,poidsTransfert,{type:"transfert",distM:d});
+      addEdge(nj.id,ni.id,poidsTransfert,{type:"transfert",distM:d});
+    }
+  }
+
+  return {noeuds, adj};
+}
+
+// MinHeap simple pour Dijkstra
+class MinHeap{
+  constructor(){this.h=[];}
+  push(item){
+    this.h.push(item);
+    let i=this.h.length-1;
+    while(i>0){
+      const p=(i-1)>>1;
+      if(this.h[p].poids<=this.h[i].poids) break;
+      [this.h[p],this.h[i]]=[this.h[i],this.h[p]];
+      i=p;
+    }
+  }
+  pop(){
+    const top=this.h[0];
+    const last=this.h.pop();
+    if(this.h.length){
+      this.h[0]=last;
+      let i=0;
+      while(true){
+        const l=2*i+1,r=2*i+2;
+        let s=i;
+        if(l<this.h.length&&this.h[l].poids<this.h[s].poids) s=l;
+        if(r<this.h.length&&this.h[r].poids<this.h[s].poids) s=r;
+        if(s===i) break;
+        [this.h[s],this.h[i]]=[this.h[i],this.h[s]];
+        i=s;
+      }
+    }
+    return top;
+  }
+  get size(){return this.h.length;}
+}
+
+// Dijkstra principal
+// Retourne {dureeTotal, etapesTCL:[{cle,arretDepart,arretArrivee,duree1,distVersArret,distDepuisArret},...]}
+function dijkstraTCL(latDep,lonDep,latDest,lonDest,modesTCL,lignesExclues=new Set(),seuilDest=600){
+  const {noeuds,adj}=construireGraphe(modesTCL);
+  const nodeList=Object.values(noeuds).filter(n=>!lignesExclues.has(n.cle));
+  // Filtrer aussi les arêtes TCL dont la ligne source est exclue
+  const adjFiltre={};
+  for(const [id,edges] of Object.entries(adj)){
+    const n=noeuds[id];
+    if(n&&lignesExclues.has(n.cle)) continue; // nœud source exclu
+    adjFiltre[id]=edges.filter(e=>{
+      if(e.type!=="tcl") return true; // garder les transferts
+      const nDest=noeuds[e.to];
+      return !nDest||!lignesExclues.has(nDest.cle);
+    });
+  }
+
+  // Nœuds d'entrée : arrêts accessibles à pied depuis le départ (< 1500m)
+  // Nœuds de sortie : arrêts à < 200m de la destination
+  const SEUIL_DEST=seuilDest;
+  const SEUIL_DEP=1500;
+
+  const dist_={}; // poids minimal connu vers chaque nœud
+  const prev={};  // prédécesseur
+  const heap=new MinHeap();
+
+  // Initialisation : injecter le coût d'accès depuis le départ
+  for(const n of nodeList){
+    const d=dist(latDep,lonDep,n.arret.lat,n.arret.lon);
+    if(d>SEUIL_DEP) continue;
+    const poids=mToMin(d,V_MARCHE)+ATTENTE_TCL; // marche + attente première ligne
+    if(dist_[n.id]===undefined||poids<dist_[n.id]){
+      dist_[n.id]=poids;
+      prev[n.id]={from:"SOURCE",distAcces:d,poidsAcces:poids};
+      heap.push({id:n.id,poids});
+    }
+  }
+
+  // Dijkstra
+  const visited=new Set();
+  while(heap.size){
+    const {id,poids}=heap.pop();
+    if(visited.has(id)) continue;
+    visited.add(id);
+    for(const edge of (adjFiltre[id]||[])){
+      const np=poids+edge.poids;
+      if(dist_[edge.to]===undefined||np<dist_[edge.to]){
+        dist_[edge.to]=np;
+        prev[edge.to]={from:id,edge};
+        heap.push({id:edge.to,poids:np});
+      }
+    }
+  }
+
+  // Chercher le meilleur nœud d'arrivée (< SEUIL_DEST de la destination)
+  let meilleurId=null, meilleurPoids=Infinity;
+  for(const n of nodeList){
+    if(!dist_[n.id]) continue;
+    const dFin=dist(latDest,lonDest,n.arret.lat,n.arret.lon);
+    if(dFin>SEUIL_DEST) continue;
+    const total=dist_[n.id]+mToMin(dFin,V_MARCHE);
+    if(total<meilleurPoids){
+      meilleurPoids=total;
+      meilleurId=n.id;
+    }
+  }
+
+  if(!meilleurId) return null;
+
+  // Reconstituer le chemin
+  const chemin=[];
+  let cur=meilleurId;
+  while(cur&&cur!=="SOURCE"&&prev[cur]){
+    const p=prev[cur];
+    chemin.unshift({id:cur,node:noeuds[cur],fromId:p.from,edge:p.edge,distAcces:p.distAcces,poidsAcces:p.poidsAcces});
+    cur=p.from;
+  }
+
+  // Regrouper les segments TCL consécutifs sur la même ligne en "tronçons"
+  const troncons=[];
+  let i=0;
+  while(i<chemin.length){
+    const c=chemin[i];
+    if(!c.node) { i++; continue; }
+    if(c.edge?.type==="tcl"){
+      // Accumule tous les segments consécutifs de la même ligne
+      const cle=c.node.cle;
+      const arretDep=noeuds[c.fromId]||c.node;
+      let j=i;
       let distTCL=0;
-      for(let k=iMin;k<iMax;k++) distTCL+=dist(reseau[k].lat,reseau[k].lon,reseau[k+1].lat,reseau[k+1].lon);
-      if(distTCL<150)continue;
-      // Filtre 15% assoupli : moins strict pour les trajets courts et pour métro/tram
-      const seuilPct=isBusLigne?0.15:(dDirecte<1000?0.05:0.10);
-      if(distTCL<dDirecte*seuilPct)continue;
-      const dureeTCL=mToMin(distTCL,vitesseLigne(ligne))+ATTENTE_TCL;
-      const dureeTotal=mToMin(dVersArret,V_MARCHE)+dureeTCL+mToMin(dArretDest,V_MARCHE);
-      const scorePondere=dureeTotal-bonusPriorite;
-      if(scorePondere<meilleurScore){
-        meilleurScore=scorePondere;
-        meilleur={ligne,arretDepart:ad,arretArrivee:aa,
-          dureeVersArret:Math.round(mToMin(dVersArret,V_MARCHE)),
-          dureeTCL:Math.round(dureeTCL),
-          dureeDepuisArret:Math.round(mToMin(dArretDest,V_MARCHE)),
-          dureeTotal:Math.round(dureeTotal),
-          scorePondere,
-          distVersArret:Math.round(dVersArret),
-          distDepuisArret:Math.round(dArretDest),
-          sensAller:j>i};
+      while(j<chemin.length && chemin[j].edge?.type==="tcl" && chemin[j].node.cle===cle){
+        distTCL+=chemin[j].edge.distM||0;
+        j++;
       }
+      const arretArr=chemin[j-1].node;
+      const dureeTCL=mToMin(distTCL,vitesseLigne(cle))+ATTENTE_TCL;
+      troncons.push({type:"tcl",cle,arretDep:arretDep.arret||arretDep,arretArr:arretArr.arret,dureeTCL:Math.round(dureeTCL),distTCL:Math.round(distTCL)});
+      i=j;
+    } else if(c.edge?.type==="transfert"){
+      troncons.push({type:"transfert",distM:c.edge.distM});
+      i++;
+    } else {
+      i++;
     }
   }
-  return meilleur;
+
+  // Calculer accès départ et fin
+  const premierNoeud=noeuds[meilleurId];
+  const dernierNoeud=noeuds[chemin[0]?.fromId]||noeuds[chemin[0]?.id];
+  const arretDepart=chemin.length?noeuds[chemin.find(c=>c.edge?.type==="tcl")?.fromId]||noeuds[chemin[0].id]:null;
+
+  // Trouver le nœud source (premier TCL du chemin)
+  let premierTCLFromId=null;
+  for(const c of chemin){
+    if(c.edge?.type==="tcl"){ premierTCLFromId=c.fromId; break; }
+  }
+  const noeudAcces=noeuds[premierTCLFromId];
+  const arretAcces=noeudAcces?noeudAcces.arret:null;
+  const distAcces=arretAcces?dist(latDep,lonDep,arretAcces.lat,arretAcces.lon):0;
+  const distFin=dist(latDest,lonDest,premierNoeud.arret.lat,premierNoeud.arret.lon);
+
+  return {
+    dureeTotal:Math.round(meilleurPoids+mToMin(distFin,V_MARCHE)),
+    distAcces:Math.round(distAcces),
+    distFin:Math.round(distFin),
+    arretAcces,
+    arretFin:premierNoeud.arret,
+    troncons,
+    scorePondere:meilleurPoids // déjà intègre les bonus priorité
+  };
 }
 
-// Trouver le meilleur trajet avec UNE correspondance
-// IMPORTANT : les lignes dans CORRESPONDANCES sont sans suffixe ("A","T2"…)
-// mais RESEAUX a des clés avec suffixe ("AA","T2A","T2R"…).
-// On cherche dans les deux sens (A et R) et on garde le meilleur.
-function trouverTrajetAvecCorrespondance(latDep,lonDep,latDest,lonDest){
-  let meilleur=null,meilleurDuree=Infinity;
-  const dDirecte=dist(latDep,lonDep,latDest,lonDest);
-
-  // Résoudre un nom de ligne en tableau de réseaux (sens A et R)
-  function reseauxPourLigne(nomL){
-    const cles=[nomL+"A",nomL+"R"];
-    return cles.map(c=>({cle:c,reseau:RESEAUX[c]})).filter(x=>x.reseau);
-  }
-
-  for(const [nomCorr,lignesCorr] of Object.entries(CORRESPONDANCES)){
-    if(lignesCorr.length<2)continue;
-
-    for(let li=0;li<lignesCorr.length;li++){
-      const ligne1nom=lignesCorr[li];
-      const reseaux1=reseauxPourLigne(ligne1nom);
-      if(!reseaux1.length)continue;
-
-      for(let lj=0;lj<lignesCorr.length;lj++){
-        if(lj===li)continue;
-        const ligne2nom=lignesCorr[lj];
-        const reseaux2=reseauxPourLigne(ligne2nom);
-        if(!reseaux2.length)continue;
-
-        for(const {cle:cle1,reseau:reseau1} of reseaux1){
-          // L'arrêt de correspondance doit exister dans ce réseau
-          const arretCorr1=reseau1.find(a=>a.nom===nomCorr||a.nom.replace(/\s*-\s*/g," ").toLowerCase()===nomCorr.replace(/\s*-\s*/g," ").toLowerCase());
-          if(!arretCorr1)continue;
-
-          for(const {cle:cle2,reseau:reseau2} of reseaux2){
-            const arretCorr2=reseau2.find(a=>a.nom===nomCorr||a.nom.replace(/\s*-\s*/g," ").toLowerCase()===nomCorr.replace(/\s*-\s*/g," ").toLowerCase());
-            if(!arretCorr2)continue;
-
-            // Chercher meilleur arrêt départ sur reseau1
-            for(let i=0;i<reseau1.length;i++){
-              const ad=reseau1[i];
-              const dVersArret=dist(latDep,lonDep,ad.lat,ad.lon);
-              if(dVersArret>1200)continue;
-              const iCorr=reseau1.indexOf(arretCorr1);
-              if(iCorr<0||iCorr===i)continue;
-              const iMin1=Math.min(i,iCorr),iMax1=Math.max(i,iCorr);
-              let dist1=0;
-              for(let k=iMin1;k<iMax1;k++) dist1+=dist(reseau1[k].lat,reseau1[k].lon,reseau1[k+1].lat,reseau1[k+1].lon);
-              if(dist1<100)continue;
-              const duree1=mToMin(dist1,vitesseLigne(cle1))+ATTENTE_TCL;
-
-              // Chercher meilleur arrêt arrivée sur reseau2
-              for(let j=0;j<reseau2.length;j++){
-                const aa=reseau2[j];
-                const dArretDest=dist(latDest,lonDest,aa.lat,aa.lon);
-                if(dArretDest>1400)continue;
-                const jCorr=reseau2.indexOf(arretCorr2);
-                if(jCorr<0||jCorr===j)continue;
-                const jMin2=Math.min(jCorr,j),jMax2=Math.max(jCorr,j);
-                let dist2=0;
-                for(let k=jMin2;k<jMax2;k++) dist2+=dist(reseau2[k].lat,reseau2[k].lon,reseau2[k+1].lat,reseau2[k+1].lon);
-                if(dist2<100)continue;
-                const duree2=mToMin(dist2,vitesseLigne(cle2))+ATTENTE_TCL;
-
-                const dureeTotal=mToMin(dVersArret,V_MARCHE)+duree1+2+duree2+mToMin(dArretDest,V_MARCHE); // +2min correspondance
-                if(dureeTotal<meilleurDuree){
-                  meilleurDuree=dureeTotal;
-                  meilleur={
-                    type:"correspondance",
-                    ligne1:cle1,arretDepart:ad,arretCorrL1:arretCorr1,
-                    ligne2:cle2,arretCorrL2:arretCorr2,arretArrivee:aa,
-                    nomCorrespondance:nomCorr,
-                    dureeVersArret:Math.round(mToMin(dVersArret,V_MARCHE)),
-                    duree1:Math.round(duree1),
-                    duree2:Math.round(duree2),
-                    dureeDepuisArret:Math.round(mToMin(dArretDest,V_MARCHE)),
-                    dureeTotal:Math.round(dureeTotal),
-                    distVersArret:Math.round(dVersArret),
-                    distDepuisArret:Math.round(dArretDest),
-                  };
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  return meilleur;
-}
 
 async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dottStations){
   const options=[];
@@ -2320,132 +2420,99 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
   options.push({type:"marche",label:labelOption,duree:dureeMarcheOption,detail:`${Math.round(dDirecte)} m`,etapes:etapesMarche,trace:[[latDep,lonDep],[latDest,lonDest]]});
   if(!modes.tcl && !modes.chrono)return options;
 
-  // Trajets directs sur chaque ligne
-  for(const[ligne,reseau]of Object.entries(RESEAUX)){
-    const nomLigne=ligne.replace(/[AR]$/,"");
-    const isBus=nomLigne.startsWith("C") && nomLigne.length>1;
-    const isMetroTram=["A","B","C","D","T1","T2","T3","T4","T5","T6","T7"].includes(nomLigne);
-    if(isBus && !modes.chrono) continue;
-    if(isMetroTram && !modes.tcl) continue;
-    if(!isBus && !isMetroTram) continue;
-    const trajet=trouverMeilleurTrajet(ligne,reseau,latDep,lonDep,latDest,lonDest);
-    if(!trajet)continue;
-    const ad=trajet.arretDepart,aa=trajet.arretArrivee;
-    const terminus=trajet.sensAller?reseau[reseau.length-1].nom:reseau[0].nom;
-    const couleur=couleurLigne(ligne);
-    const etapes=[];
+  // ---- ROUTAGE DIJKSTRA ----
 
-    // Accès à l'arrêt : Dott > Vélov > marche, seulement si distance > SEUIL_MODE et gain ≥ 3 min
-    let modeAcces=null;
-    if(trajet.distVersArret>SEUIL_MODE){
-      const dureeAccesMarche=mToMin(trajet.distVersArret,V_MARCHE);
+  // ---- ROUTAGE DIJKSTRA (multi-options) ----
+  // Dijkstra tourne plusieurs fois en excluant les lignes déjà trouvées,
+  // pour collecter jusqu'à 3 options TCL distinctes (T2 ET D pour Grange-Blanche, etc.)
+
+  function construireEtapesDepuisResultat(r, velov, dott, dottStations){
+    const {troncons,arretAcces,arretFin,distAcces,distFin,dureeTotal,scorePondere}=r;
+    const etapes=[];
+    const trace=[[latDep,lonDep]];
+
+    // Accès
+    const dureeAccesMarche=Math.round(mToMin(distAcces,V_MARCHE));
+    if(distAcces>SEUIL_MODE){
+      let modeAcces=null;
+      const dureeAM=mToMin(distAcces,V_MARCHE);
       if(modes.dott&&dott.length){
         const dd=dott.map(b=>({...b,d:dist(latDep,lonDep,b.lat,b.lon)})).sort((a,b)=>a.d-b.d)[0];
-        const dureeDott=dd?mToMin(dd.d,V_MARCHE)+mToMin(trajet.distVersArret,V_DOTT):Infinity;
-        if(dd&&dd.d<600&&dureeAccesMarche-dureeDott>=3)
-          modeAcces={type:"dott",bike:dd};
+        const dureeDott=dd?mToMin(dd.d,V_MARCHE)+mToMin(distAcces,V_DOTT):Infinity;
+        if(dd&&dd.d<600&&dureeAM-dureeDott>=3) modeAcces={type:"dott",bike:dd};
       }
       if(!modeAcces&&modes.velov&&velov.length){
         const vd=velov.filter(s=>s.available_bikes>0).map(s=>({...s,d:dist(latDep,lonDep,s.lat,s.lng)})).sort((a,b)=>a.d-b.d)[0];
-        const dureeVelov=vd?mToMin(vd.d,V_MARCHE)+mToMin(trajet.distVersArret,V_VELO):Infinity;
-        if(vd&&vd.d<600&&dureeAccesMarche-dureeVelov>=3)
-          modeAcces={type:"velov",station:vd};
+        const dVelo=vd?mToMin(vd.d,V_MARCHE)+mToMin(distAcces,V_VELO):Infinity;
+        if(vd&&vd.d<600&&dureeAM-dVelo>=3) modeAcces={type:"velov",station:vd};
+      }
+      if(modeAcces?.type==="dott"){
+        const d1=Math.round(mToMin(modeAcces.bike.d,V_MARCHE)),d2=Math.round(mToMin(distAcces,V_DOTT));
+        const stD=dottStations.map(s=>({...s,d:dist(arretAcces.lat,arretAcces.lon,s.lat,s.lon)})).sort((a,b)=>a.d-b.d)[0];
+        etapes.push({icone:"🛴",titre:"Prenez une trottinette Dott",detail:`Trottinette à ${Math.round(modeAcces.bike.d)} m`,duree:d1,maps:lienMaps(latDep,lonDep,modeAcces.bike.lat,modeAcces.bike.lon),couleur:"#00b4d8"});
+        etapes.push({icone:"🛴",titre:`Roulez jusqu'à ${arretAcces.nom}`,detail:stD?`Déposez à "${stD.name}" (${Math.round(stD.d)} m de l'arrêt)`:"Emplacement Dott",duree:d2,maps:lienMaps(modeAcces.bike.lat,modeAcces.bike.lon,arretAcces.lat,arretAcces.lon),couleur:"#00b4d8"});
+      }else if(modeAcces?.type==="velov"){
+        const d1=Math.round(mToMin(modeAcces.station.d,V_MARCHE)),d2=Math.round(mToMin(distAcces,V_VELO));
+        etapes.push({icone:"🚲",titre:`Vélo'v — "${modeAcces.station.name}"`,detail:`${modeAcces.station.available_bikes} vélo(s) dispo`,duree:d1+d2,maps:lienMaps(latDep,lonDep,modeAcces.station.lat,modeAcces.station.lng),couleur:"#e8b400",dispo:modeAcces.station.available_bikes});
+      }else{
+        etapes.push({icone:"🚶",titre:`Marchez jusqu'à ${arretAcces.nom}`,detail:`${Math.round(distAcces)} m`,duree:dureeAccesMarche,maps:lienMaps(latDep,lonDep,arretAcces.lat,arretAcces.lon),couleur:"#7a6a5a"});
+      }
+    }else if(distAcces>0){
+      etapes.push({icone:"🚶",titre:`Marchez jusqu'à ${arretAcces.nom}`,detail:`${Math.round(distAcces)} m`,duree:dureeAccesMarche,maps:lienMaps(latDep,lonDep,arretAcces.lat,arretAcces.lon),couleur:"#7a6a5a"});
+    }
+    if(arretAcces) trace.push([arretAcces.lat,arretAcces.lon]);
+
+    // Tronçons TCL
+    const labelLignes=[];
+    for(const t of troncons){
+      if(t.type==="tcl"){
+        const nomL=nomLignePropre(t.cle);
+        const couleur=couleurLigne(t.cle);
+        const reseau=RESEAUX[t.cle];
+        const idxDep=reseau.findIndex(a=>a.nom===t.arretDep.nom||(Math.abs(a.lat-t.arretDep.lat)<0.0001&&Math.abs(a.lon-t.arretDep.lon)<0.0001));
+        const idxArr=reseau.findIndex(a=>a.nom===t.arretArr.nom||(Math.abs(a.lat-t.arretArr.lat)<0.0001&&Math.abs(a.lon-t.arretArr.lon)<0.0001));
+        const terminus=idxArr>idxDep?reseau[reseau.length-1].nom:reseau[0].nom;
+        etapes.push({icone:"🚇",titre:`Ligne ${nomL} → direction ${terminus}`,detail:`De ${t.arretDep.nom} à ${t.arretArr.nom} — ~${t.dureeTCL} min`,duree:t.dureeTCL,ligne:t.cle,couleur});
+        etapes.push({icone:"📍",titre:`Descendez à ${t.arretArr.nom}`,detail:"",duree:0,couleur});
+        trace.push([t.arretDep.lat,t.arretDep.lon],[t.arretArr.lat,t.arretArr.lon]);
+        labelLignes.push(nomL);
+      }else if(t.type==="transfert"){
+        const prochainTCL=troncons.find((x,idx)=>idx>troncons.indexOf(t)&&x.type==="tcl");
+        if(prochainTCL){
+          const nomL2=nomLignePropre(prochainTCL.cle);
+          etapes.push({icone:"🔄",titre:`Correspondance`,detail:`Changez pour la ligne ${nomL2} (~2 min)`,duree:2,couleur:"#7a6a5a"});
+        }
       }
     }
 
-    if(modeAcces?.type==="dott"){
-      const d1=Math.round(mToMin(modeAcces.bike.d,V_MARCHE)),d2=Math.round(mToMin(trajet.distVersArret,V_DOTT));
-      const stDepotArret=dottStations.map(s=>({...s,d:dist(ad.lat,ad.lon,s.lat,s.lon)})).sort((a,b)=>a.d-b.d)[0];
-      const depotArretInfo=stDepotArret?`Déposez à "${stDepotArret.name}" (à ${Math.round(stDepotArret.d)} m de l'arrêt)`:"Emplacement réservé Dott";
-      etapes.push({icone:"🛴",titre:"Prenez une trottinette Dott",detail:`Trottinette à ${Math.round(modeAcces.bike.d)} m de vous`,duree:d1,maps:lienMaps(latDep,lonDep,modeAcces.bike.lat,modeAcces.bike.lon),couleur:"#00b4d8"});
-      etapes.push({icone:"🛴",titre:`Roulez jusqu’à ${ad.nom}`,detail:depotArretInfo,duree:d2,maps:lienMaps(modeAcces.bike.lat,modeAcces.bike.lon,ad.lat,ad.lon),couleur:"#00b4d8"});
-    }else if(modeAcces?.type==="velov"){
-      const d1=Math.round(mToMin(modeAcces.station.d,V_MARCHE)),d2=Math.round(mToMin(trajet.distVersArret,V_VELO));
-      etapes.push({icone:"🚲",titre:`Vélo'v — station "${modeAcces.station.name}"`,detail:`${modeAcces.station.available_bikes} vélo(s) dispo — rejoignez ${ad.nom}`,duree:d1+d2,maps:lienMaps(latDep,lonDep,modeAcces.station.lat,modeAcces.station.lng),couleur:"#e8b400",dispo:modeAcces.station.available_bikes});
-    }else{
-      etapes.push({icone:"🚶",titre:`Marchez jusqu'à ${ad.nom}`,detail:`${trajet.distVersArret} m`,duree:trajet.dureeVersArret,maps:lienMaps(latDep,lonDep,ad.lat,ad.lon),couleur:"#7a6a5a"});
+    // Marche finale
+    if(distFin>0){
+      etapes.push({icone:"🚶",titre:"Marchez jusqu'à votre destination",detail:`${Math.round(distFin)} m`,duree:Math.round(mToMin(distFin,V_MARCHE)),maps:lienMaps(arretFin.lat,arretFin.lon,latDest,lonDest),couleur:"#7a6a5a"});
     }
-
-    etapes.push({icone:"🚇",titre:`Ligne ${nomLigne} → direction ${terminus}`,detail:`De ${ad.nom} à ${aa.nom} — ~${trajet.dureeTCL} min`,duree:trajet.dureeTCL,ligne,couleur});
-    etapes.push({icone:"📍",titre:`Descendez à ${aa.nom}`,detail:"",duree:0,couleur});
-
-    // Fin : Dott > Vélov > marche
-    // Conditions : distance > SEUIL_FIN, gain réel ≥ 3 min, et dépôt < 500m destination
-    let modeFin=null;
-    if(trajet.distDepuisArret>SEUIL_FIN){
-      const dureeFinMarche=mToMin(trajet.distDepuisArret,V_MARCHE);
-      if(modes.dott&&dott.length){
-        const df=dott.map(b=>({...b,d:dist(aa.lat,aa.lon,b.lat,b.lon)})).sort((a,b)=>a.d-b.d)[0];
-        const stDepotCheck=dottStations.map(s=>({...s,d:dist(latDest,lonDest,s.lat,s.lon)})).sort((a,b)=>a.d-b.d)[0];
-        const dureeDott=df?mToMin(df.d,V_MARCHE)+mToMin(trajet.distDepuisArret,V_DOTT):Infinity;
-        if(df&&df.d<600&&stDepotCheck&&stDepotCheck.d<500&&dureeFinMarche-dureeDott>=3)
-          modeFin={type:"dott",bike:df};
-      }
-      if(!modeFin&&modes.velov&&velov.length){
-        const vf=velov.filter(s=>s.available_bikes>0).map(s=>({...s,d:dist(aa.lat,aa.lon,s.lat,s.lng)})).sort((a,b)=>a.d-b.d)[0];
-        const vdestCheck=velov.filter(s=>s.available_bike_stands>0).map(s=>({...s,d:dist(latDest,lonDest,s.lat,s.lng)})).sort((a,b)=>a.d-b.d)[0];
-        const dureeVelov=vf?mToMin(vf.d,V_MARCHE)+mToMin(trajet.distDepuisArret,V_VELO):Infinity;
-        if(vf&&vf.d<600&&vdestCheck&&vdestCheck.d<500&&dureeFinMarche-dureeVelov>=3)
-          modeFin={type:"velov",station:vf};
-      }
-    }
-
-    if(modeFin?.type==="dott"){
-      const d1=Math.round(mToMin(trajet.distDepuisArret,V_DOTT));
-      const stDepot=dottStations.map(s=>({...s,d:dist(latDest,lonDest,s.lat,s.lon)})).sort((a,b)=>a.d-b.d)[0];
-      const infoDepot2=stDepot?`Déposez à "${stDepot.name}" (à ${Math.round(stDepot.d)} m)`:"Emplacement réservé Dott";
-      etapes.push({icone:"🛴",titre:"Prenez la trottinette Dott",detail:`Trottinette à ${Math.round(modeFin.bike.d)} m de l'arrêt`,duree:d1,maps:lienMaps(aa.lat,aa.lon,modeFin.bike.lat,modeFin.bike.lon),couleur:"#00b4d8"});
-      etapes.push({icone:"🛴",titre:"Déposez la trottinette",detail:infoDepot2,duree:0,maps:stDepot?lienMaps(latDest,lonDest,stDepot.lat,stDepot.lon):null,couleur:"#00b4d8"});
-      if(stDepot&&stDepot.d>50){const dureeFinD=Math.round(mToMin(stDepot.d,V_MARCHE));etapes.push({icone:"🚶",titre:"Marchez jusqu’à votre destination",detail:`${Math.round(stDepot.d)} m`,duree:dureeFinD,maps:lienMaps(stDepot.lat,stDepot.lon,latDest,lonDest),couleur:"#7a6a5a"});}
-    }else if(modeFin?.type==="velov"){
-      const vdest=velov.filter(s=>s.available_bike_stands>0).map(s=>({...s,d:dist(latDest,lonDest,s.lat,s.lng)})).sort((a,b)=>a.d-b.d)[0];
-      const d1=Math.round(mToMin(trajet.distDepuisArret,V_VELO));
-      etapes.push({icone:"🚲",titre:`Vélo'v — station "${modeFin.station.name}"`,detail:`${modeFin.station.available_bikes} vélo(s) disponible(s) à ${Math.round(modeFin.station.d)} m de l'arrêt`,duree:Math.round(mToMin(modeFin.station.d,V_MARCHE)),maps:lienMaps(aa.lat,aa.lon,modeFin.station.lat,modeFin.station.lng),couleur:"#e8b400",dispo:modeFin.station.available_bikes});
-      const depotInfo=vdest?`Déposez à "${vdest.name}" (${vdest.available_bike_stands} place(s) libres, à ${Math.round(vdest.d)} m)`:"Station de dépôt Vélov'";
-      etapes.push({icone:"🚲",titre:"Pédalez jusqu'à destination",detail:depotInfo,duree:d1,maps:lienMaps(modeFin.station.lat,modeFin.station.lng,latDest,lonDest),couleur:"#e8b400"});
-      if(vdest&&vdest.d>50){const dFin=Math.round(mToMin(vdest.d,V_MARCHE));etapes.push({icone:"🚶",titre:"Marchez jusqu'à votre destination",detail:`${Math.round(vdest.d)} m`,duree:dFin,maps:lienMaps(vdest.lat,vdest.lng,latDest,lonDest),couleur:"#7a6a5a"});}
-    }else{
-      etapes.push({icone:"🚶",titre:"Marchez jusqu'à votre destination",detail:`${trajet.distDepuisArret} m`,duree:trajet.dureeDepuisArret,maps:lienMaps(aa.lat,aa.lon,latDest,lonDest),couleur:"#7a6a5a"});
-    }
-
     etapes.push({icone:"🎯",titre:"Vous êtes arrivé !",detail:"",duree:0,couleur:"#2e8b3a"});
-    options.push({type:"tcl",label:`🚇 Ligne ${nomLigne}`,ligne,duree:trajet.dureeTotal,_score:trajet.scorePondere,detail:`${ad.nom} → ${aa.nom}`,etapes,trace:[[latDep,lonDep],[ad.lat,ad.lon],[aa.lat,aa.lon],[latDest,lonDest]]});
+    trace.push([latDest,lonDest]);
+
+    const label=labelLignes.length===1?`🚇 Ligne ${labelLignes[0]}`:`🚇 ${labelLignes.join("→")} (corresp.)`;
+    const lignePrincipale=troncons.find(t=>t.type==="tcl")?.cle||"";
+    return {type:"tcl",label,ligne:lignePrincipale,duree:dureeTotal,_score:scorePondere,
+            detail:etapes.filter(e=>e.icone==="🚇").map(e=>e.detail).join(" | "),
+            etapes,trace,_lignesId:labelLignes.join("|")};
   }
 
-  // Trajet avec correspondance
-  const trajCorr=trouverTrajetAvecCorrespondance(latDep,lonDep,latDest,lonDest);
-  if(trajCorr){
-    const ad=trajCorr.arretDepart,aa=trajCorr.arretArrivee;
-    const couleur1=couleurLigne(trajCorr.ligne1),couleur2=couleurLigne(trajCorr.ligne2);
-    const etapesC=[];
-
-    // Accès à l'arrêt de départ
-    if(trajCorr.distVersArret>SEUIL_MODE){
-      if(modes.dott&&dott.length){
-        const dd=dott.map(b=>({...b,d:dist(latDep,lonDep,b.lat,b.lon)})).sort((a,b)=>a.d-b.d)[0];
-        if(dd&&dd.d<600) etapesC.push({icone:"🛴",titre:"Prenez une trottinette Dott",detail:`Trottinette à ${Math.round(dd.d)} m`,duree:Math.round(mToMin(dd.d,V_MARCHE)+mToMin(trajCorr.distVersArret,V_DOTT)),maps:lienMaps(latDep,lonDep,dd.lat,dd.lon),couleur:"#00b4d8"});
-      }
-    }
-    if(!etapesC.length) etapesC.push({icone:"🚶",titre:`Marchez jusqu’à ${ad.nom}`,detail:`${trajCorr.distVersArret} m`,duree:trajCorr.dureeVersArret,maps:lienMaps(latDep,lonDep,ad.lat,ad.lon),couleur:"#7a6a5a"});
-
-    // Ligne 1
-    const nomL1=nomLignePropre(trajCorr.ligne1),nomL2=nomLignePropre(trajCorr.ligne2);
-    const terminus1=RESEAUX[trajCorr.ligne1][RESEAUX[trajCorr.ligne1].indexOf(trajCorr.arretCorrL1)>RESEAUX[trajCorr.ligne1].indexOf(ad)?RESEAUX[trajCorr.ligne1].length-1:0].nom;
-    etapesC.push({icone:"🚇",titre:`Ligne ${nomL1} → direction ${terminus1}`,detail:`De ${ad.nom} jusqu’à ${trajCorr.nomCorrespondance} — ~${trajCorr.duree1} min`,duree:trajCorr.duree1,ligne:trajCorr.ligne1,couleur:couleur1});
-    etapesC.push({icone:"🔄",titre:`Correspondance à ${trajCorr.nomCorrespondance}`,detail:`Changez pour la ligne ${nomL2}`,duree:2,couleur:"#7a6a5a"});
-
-    // Ligne 2
-    const iCorr2=RESEAUX[trajCorr.ligne2].indexOf(trajCorr.arretCorrL2);
-    const iArr2=RESEAUX[trajCorr.ligne2].indexOf(aa);
-    const terminus2=iArr2>iCorr2?RESEAUX[trajCorr.ligne2][RESEAUX[trajCorr.ligne2].length-1].nom:RESEAUX[trajCorr.ligne2][0].nom;
-    etapesC.push({icone:"🚇",titre:`Ligne ${nomL2} → direction ${terminus2}`,detail:`De ${trajCorr.nomCorrespondance} jusqu’à ${aa.nom} — ~${trajCorr.duree2} min`,duree:trajCorr.duree2,ligne:trajCorr.ligne2,couleur:couleur2});
-    etapesC.push({icone:"📍",titre:`Descendez à ${aa.nom}`,detail:"",duree:0,couleur:couleur2});
-
-    // Fin
-    if(trajCorr.distDepuisArret>50) etapesC.push({icone:"🚶",titre:"Marchez jusqu’à votre destination",detail:`${trajCorr.distDepuisArret} m`,duree:trajCorr.dureeDepuisArret,maps:lienMaps(aa.lat,aa.lon,latDest,lonDest),couleur:"#7a6a5a"});
-    etapesC.push({icone:"🎯",titre:"Vous êtes arrivé !",detail:"",duree:0,couleur:"#2e8b3a"});
-
-    options.push({type:"tcl",label:`🚇 ${trajCorr.ligne1}→${trajCorr.ligne2} (corresp.)`,ligne:trajCorr.ligne1,duree:trajCorr.dureeTotal,detail:`${ad.nom} → ${trajCorr.nomCorrespondance} → ${aa.nom}`,etapes:etapesC,trace:[[latDep,lonDep],[ad.lat,ad.lon],[trajCorr.arretCorrL1.lat,trajCorr.arretCorrL1.lon],[aa.lat,aa.lon],[latDest,lonDest]]});
+  // Jusqu'à 3 passes Dijkstra : chaque passe exclut les lignes principales déjà trouvées
+  const lignesExclues=new Set();
+  let trouveResultat=false;
+  for(let passe=0;passe<3;passe++){
+    let r=dijkstraTCL(latDep,lonDep,latDest,lonDest,{tcl:modes.tcl,chrono:modes.chrono},lignesExclues,600);
+    // Si aucun résultat avec 600m, tenter avec 900m (zones peu desservies comme Gerland)
+    if(!r) r=dijkstraTCL(latDep,lonDep,latDest,lonDest,{tcl:modes.tcl,chrono:modes.chrono},lignesExclues,900);
+    if(!r) break;
+    trouveResultat=true;
+    const opt=construireEtapesDepuisResultat(r,velov,dott,dottStations);
+    if(!options.some(o=>o._lignesId===opt._lignesId)) options.push(opt);
+    // Exclure toutes les lignes TCL utilisées dans cette passe
+    r.troncons.filter(t=>t.type==="tcl").forEach(t=>lignesExclues.add(t.cle));
+    if(passe>0 && options.length>1 && opt.duree > options[1].duree+10) break;
   }
 
   // Éliminer les options TCL qui sont plus lentes que la marche directe
@@ -2507,7 +2574,7 @@ function afficherItineraire(iti){
   let html=`<div class="trajet-header"><div><div class="trajet-total">⚡ ${iti.duree} min</div><div class="trajet-detail">${eco>0?`${eco} min gagnées vs à pied`:"Trajet optimisé"}</div></div></div>`;
   iti.etapes.forEach(e=>{
     if(e.duree===0&&!e.detail&&e.icone!=="🎯")return;
-    const bdg=e.ligne?`<span class="badge-ligne" style="background:${e.couleur}">${e.ligne}</span>`:"";
+    const bdg=e.ligne?`<span class="badge-ligne" style="background:${e.couleur}">${nomLignePropre(e.ligne)}</span>`:"";
     const dur=e.duree>0?`${e.duree} min`:"";
     let dispo="";
     if(e.dispo!==undefined){const cls=e.dispo>=3?"dispo-ok":"dispo-warn";dispo=`<div class="${cls}">● ${e.dispo} vélo(s) disponible(s)</div>`;}
