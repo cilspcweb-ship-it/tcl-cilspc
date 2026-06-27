@@ -16,58 +16,86 @@
   --metro:#e05c00;--tram:#0070b8;--bus:#2e8b3a;--velov:#e8b400;--dott:#00b4d8;
   --radius:10px;
 }
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-serif;font-size:15px;min-height:100%}
-#header{background:var(--bordeaux);padding:16px 20px 12px;border-bottom:3px solid var(--or)}
-#header h1{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--creme);line-height:1.2}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-serif;font-size:15px;min-height:100%;-webkit-text-size-adjust:100%}
+#header{background:var(--bordeaux);padding:12px 16px 10px;border-bottom:3px solid var(--or)}
+#header h1{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--creme);line-height:1.2}
 #header h1 span{color:var(--or-light)}
-#header p{font-size:11px;color:rgba(250,246,239,.55);margin-top:3px}
-#formulaire{padding:16px 20px;background:var(--blanc);border-bottom:1px solid var(--border)}
-.field{margin-bottom:12px}
-.field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
-.field input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--texte);background:var(--blanc);outline:none;transition:border-color .2s}
+#header p{font-size:11px;color:rgba(250,246,239,.55);margin-top:2px}
+#formulaire{padding:12px 16px;background:var(--blanc);border-bottom:1px solid var(--border)}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
+.field input{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:16px;color:var(--texte);background:var(--blanc);outline:none;transition:border-color .2s;-webkit-appearance:none}
 .field input:focus{border-color:var(--bordeaux)}
 .field input::placeholder{color:#bbb}
 .field-wrap{position:relative}
-.suggestions{position:absolute;z-index:9999;background:var(--blanc);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;width:100%;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1)}
-.suggestion-item{padding:10px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--creme2)}
-.suggestion-item:hover{background:var(--creme2)}
+.suggestions{position:absolute;z-index:9999;background:var(--blanc);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;width:100%;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.suggestion-item{padding:12px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--creme2)}
+.suggestion-item:active{background:var(--creme2)}
 .suggestion-item:last-child{border-bottom:none}
-.options-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.option-btn{flex:1;min-width:80px;padding:8px 6px;border:1.5px solid var(--border);border-radius:8px;background:var(--blanc);color:var(--muted);font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;cursor:pointer;text-align:center;transition:all .2s}
+.options-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.option-btn{flex:1;min-width:70px;padding:10px 4px;border:1.5px solid var(--border);border-radius:8px;background:var(--blanc);color:var(--muted);font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;cursor:pointer;text-align:center;transition:all .2s;-webkit-appearance:none;touch-action:manipulation}
 .option-btn.active{background:var(--bordeaux);border-color:var(--bordeaux);color:#fff}
-.modes-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-.mode-check{display:flex;align-items:center;gap:6px;padding:6px 10px;border:1.5px solid var(--border);border-radius:20px;cursor:pointer;font-size:12px;font-weight:500;color:var(--muted);background:var(--blanc);transition:all .2s;user-select:none}
+.modes-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.mode-check{display:flex;align-items:center;gap:5px;padding:8px 10px;border:1.5px solid var(--border);border-radius:20px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);background:var(--blanc);transition:all .2s;user-select:none;touch-action:manipulation}
 .mode-check.active{border-color:var(--bordeaux);color:var(--bordeaux);background:#fff5f5}
 .mode-check input{display:none}
-.mode-dot{width:8px;height:8px;border-radius:50%}
-#btn-chercher{width:100%;padding:12px;background:var(--bordeaux);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;cursor:pointer}
+.mode-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+#btn-chercher{width:100%;padding:14px;background:var(--bordeaux);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:16px;font-weight:600;cursor:pointer;touch-action:manipulation}
+#btn-chercher:active{background:var(--bordeaux2)}
 #btn-chercher:disabled{background:#ccc;cursor:not-allowed}
-#map{height:220px;border-bottom:1px solid var(--border)}
-#resultat{padding:16px 20px}
-#etat-msg{padding:14px 16px;border-radius:8px;font-size:13px;display:none;margin-bottom:14px}
+#map{height:200px;border-bottom:1px solid var(--border)}
+#resultat{padding:12px 16px}
+#etat-msg{padding:12px 14px;border-radius:8px;font-size:13px;display:none;margin-bottom:12px}
 #etat-msg.load{background:var(--creme2);color:var(--muted)}
 #etat-msg.err{background:#fff3f3;border-left:4px solid var(--bordeaux);color:var(--bordeaux2)}
-.etape{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--creme2)}
+.etape{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--creme2)}
 .etape:last-child{border-bottom:none}
-.etape-icone{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.etape-corps{flex:1}
-.etape-titre{font-size:14px;font-weight:600;color:var(--texte);margin-bottom:2px}
-.etape-detail{font-size:12px;color:var(--muted);line-height:1.5}
-.etape-duree{font-size:13px;font-weight:600;color:var(--bordeaux);white-space:nowrap}
-.badge-ligne{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:700;color:#fff;margin-right:5px;vertical-align:middle}
-.dispo-ok{color:#2e8b3a;font-size:11px;margin-top:3px}
-.dispo-warn{color:#e07000;font-size:11px;margin-top:3px}
-.trajet-header{background:var(--creme2);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
-.trajet-total{font-size:18px;font-weight:700;color:var(--bordeaux)}
-.trajet-detail{font-size:12px;color:var(--muted);margin-top:2px}
-.lien-maps{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:4px 10px;background:var(--creme2);border-radius:20px;font-size:11px;color:var(--bordeaux);text-decoration:none;font-weight:500}
-.iti-option{border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;cursor:pointer;background:var(--blanc);transition:all .2s}
-.iti-option:hover,.iti-option.selected{border-color:var(--bordeaux);background:#fff5f5}
+.etape-icone{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.etape-corps{flex:1;min-width:0}
+.etape-titre{font-size:13px;font-weight:600;color:var(--texte);margin-bottom:2px}
+.etape-detail{font-size:12px;color:var(--muted);line-height:1.4;word-break:break-word}
+.etape-duree{font-size:13px;font-weight:600;color:var(--bordeaux);white-space:nowrap;padding-left:4px}
+.badge-ligne{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;color:#fff;margin-right:4px;vertical-align:middle}
+.dispo-ok{color:#2e8b3a;font-size:11px;margin-top:2px}
+.dispo-warn{color:#e07000;font-size:11px;margin-top:2px}
+.trajet-header{background:var(--creme2);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.trajet-total{font-size:17px;font-weight:700;color:var(--bordeaux)}
+.trajet-detail{font-size:11px;color:var(--muted);margin-top:2px}
+.lien-maps{display:inline-flex;align-items:center;gap:4px;margin-top:5px;padding:5px 10px;background:var(--creme2);border-radius:20px;font-size:12px;color:var(--bordeaux);text-decoration:none;font-weight:500;touch-action:manipulation}
+.lien-maps:active{background:var(--border)}
+.iti-option{border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;background:var(--blanc);transition:all .2s;touch-action:manipulation}
+.iti-option:active,.iti-option.selected{border-color:var(--bordeaux);background:#fff5f5}
 .iti-option-titre{font-size:13px;font-weight:600;color:var(--texte);display:flex;align-items:center;gap:8px}
-.iti-option-detail{font-size:11px;color:var(--muted);margin-top:3px}
-#footer{text-align:center;padding:14px 20px 24px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);margin-top:16px}
-@media(max-width:480px){#formulaire,#resultat{padding:12px}}
+.iti-option-detail{font-size:11px;color:var(--muted);margin-top:2px}
+#footer{text-align:center;padding:12px 16px 20px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);margin-top:14px}
+
+#nav{display:flex;background:var(--blanc);border-bottom:2px solid var(--border);overflow-x:auto}
+.nav-tab{flex:1;padding:10px 8px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;touch-action:manipulation}
+.nav-tab.active{color:var(--bordeaux);border-bottom-color:var(--bordeaux);font-weight:600}
+.panel{display:none}
+.panel.active{display:block}
+.tuto-section{padding:14px 16px;border-bottom:1px solid var(--creme2)}
+.tuto-section:last-child{border-bottom:none}
+.tuto-titre{font-size:14px;font-weight:700;color:var(--bordeaux);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.tuto-texte{font-size:13px;color:var(--texte);line-height:1.6}
+.tuto-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;vertical-align:middle;margin:2px}
+.tuto-chip.bordeaux{background:var(--bordeaux);color:#fff}
+.tuto-chip.outline{border:1.5px solid var(--bordeaux);color:var(--bordeaux)}
+.tuto-chip.grey{border:1.5px solid var(--border);color:var(--muted)}
+.tuto-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.tuto-etape{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start}
+.tuto-num{width:24px;height:24px;border-radius:50%;background:var(--bordeaux);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.tuto-content{flex:1;font-size:13px;color:var(--texte);line-height:1.5}
+.tuto-note{background:var(--creme2);border-left:3px solid var(--or);border-radius:0 6px 6px 0;padding:8px 12px;font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
+@media(min-width:600px){
+  #formulaire,#resultat{padding:16px 24px}
+  #header{padding:16px 24px 12px}
+  #header h1{font-size:22px}
+  #map{height:280px}
+  .field input{font-size:14px}
+  #btn-chercher{font-size:15px;padding:12px}
+}
 </style>
 </head>
 <body>
@@ -75,6 +103,13 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
   <h1>🗺️ Itinéraire<br><span>Perrache · Confluence</span></h1>
   <p>Transport multimodal en temps réel</p>
 </div>
+
+<div id="nav">
+  <button class="nav-tab active" onclick="setOnglet('app',this)">🗺️ Itinéraire</button>
+  <button class="nav-tab" onclick="setOnglet('aide',this)">❓ Aide</button>
+</div>
+
+<div id="panel-app" class="panel active">
 <div id="formulaire">
   <div class="field">
     <label>📍 Votre position</label>
@@ -114,10 +149,101 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
   <div id="options-itineraires"></div>
   <div id="etapes"></div>
 </div>
+
+</div><!-- fin panel-app -->
+
+<div id="panel-aide" class="panel">
+  <div style="padding:14px 16px 0">
+    <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--bordeaux);margin-bottom:4px">Comment utiliser l'itinéraire ?</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Guide complet en 5 étapes</div>
+  </div>
+
+  <div class="tuto-section">
+    <div class="tuto-titre">1️⃣ Votre position</div>
+    <div class="tuto-texte">
+      Au chargement, votre position est détectée automatiquement. Si ce n'est pas le cas, tapez votre adresse dans le champ <strong>Votre position</strong> et choisissez une suggestion.<br><br>
+      Vous pouvez aussi <strong>cliquer sur la carte</strong> pour définir votre point de départ ou destination directement.
+    </div>
+  </div>
+
+  <div class="tuto-section">
+    <div class="tuto-titre">2️⃣ La destination</div>
+    <div class="tuto-texte">
+      Tapez l'adresse ou le nom du lieu dans <strong>Destination</strong>. Une liste de suggestions apparaît, sélectionnez la bonne.<br><br>
+      Vous pouvez aussi cliquer directement sur la carte.
+    </div>
+    <div class="tuto-note">💡 La recherche est centrée sur Lyon automatiquement</div>
+  </div>
+
+  <div class="tuto-section">
+    <div class="tuto-titre">3️⃣ La priorité</div>
+    <div class="tuto-texte">Choisissez ce qui compte le plus pour vous :</div>
+    <br>
+    <div class="tuto-etape">
+      <div class="tuto-num">A</div>
+      <div class="tuto-content"><span class="tuto-chip bordeaux">⚡ Le plus rapide</span> — combine tous les modes disponibles pour minimiser le temps total</div>
+    </div>
+    <div class="tuto-etape">
+      <div class="tuto-num">B</div>
+      <div class="tuto-content"><span class="tuto-chip outline">🚶 À pied</span> — itinéraire piéton direct, avec Vélo'v ou Dott si disponibles et plus rapides</div>
+    </div>
+    <div class="tuto-etape">
+      <div class="tuto-num">C</div>
+      <div class="tuto-content"><span class="tuto-chip grey">🪑 Peu marcher</span> — favorise les transports pour minimiser la marche</div>
+    </div>
+  </div>
+
+  <div class="tuto-section">
+    <div class="tuto-titre">4️⃣ Les modes de transport</div>
+    <div class="tuto-texte">Activez ou désactivez les modes selon vos préférences. Un mode <strong>coloré et souligné</strong> est actif :</div>
+    <br>
+    <div class="tuto-etape">
+      <div class="tuto-num" style="background:#e05c00">T</div>
+      <div class="tuto-content"><span class="tuto-chip" style="border:1.5px solid var(--bordeaux);color:var(--bordeaux)"><span class="tuto-dot" style="background:#e05c00"></span>TCL</span> — Métro, tram et bus du réseau TCL Lyon</div>
+    </div>
+    <div class="tuto-etape">
+      <div class="tuto-num" style="background:#e8b400">V</div>
+      <div class="tuto-content"><span class="tuto-chip" style="border:1.5px solid var(--bordeaux);color:var(--bordeaux)"><span class="tuto-dot" style="background:#e8b400"></span>Vélo'v</span> — Vélos en libre-service. Nécessite un abonnement ou un paiement à la station</div>
+    </div>
+    <div class="tuto-etape">
+      <div class="tuto-num" style="background:#00b4d8">D</div>
+      <div class="tuto-content"><span class="tuto-chip" style="border:1.5px solid var(--bordeaux);color:var(--bordeaux)"><span class="tuto-dot" style="background:#00b4d8"></span>Dott</span> — Trottinettes électriques. À déposer obligatoirement dans un emplacement réservé Dott</div>
+    </div>
+    <div class="tuto-note">⚠️ Pour le Vélo'v et Dott, la disponibilité est en temps réel. Si aucun véhicule n'est disponible à moins de 600m, l'alternative marche est proposée.</div>
+  </div>
+
+  <div class="tuto-section">
+    <div class="tuto-titre">5️⃣ Les résultats</div>
+    <div class="tuto-texte">
+      Après avoir cliqué sur <span class="tuto-chip bordeaux">Trouver mon itinéraire →</span>, plusieurs options apparaissent :<br><br>
+      — Cliquez sur une option pour voir le détail des étapes<br>
+      — Chaque étape a un bouton <strong>📱 Guider vers ce point</strong> qui ouvre Google Maps pour vous guider précisément<br>
+      — La carte affiche le trajet en pointillés (marche) et trait plein (transport)
+    </div>
+    <div class="tuto-note">💡 Les durées sont estimées. Prévoyez 2-3 min d'attente supplémentaires pour le TCL.</div>
+  </div>
+
+  <div class="tuto-section">
+    <div class="tuto-titre">🔄 Données en temps réel</div>
+    <div class="tuto-texte">
+      Les disponibilités Vélo'v et Dott sont récupérées en direct à chaque calcul. Les passages TCL ne sont pas consultés en temps réel dans cet outil — utilisez l'onglet <strong>Passages TCL</strong> sur le site pour les horaires exacts.
+    </div>
+  </div>
+</div><!-- fin panel-aide -->
+
 <div id="footer">Données : Grand Lyon Data · Vélo'v · Dott · OpenStreetMap</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+
+function setOnglet(id,btn){
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-'+id).classList.add('active');
+  if(id==='app') setTimeout(()=>map&&map.invalidateSize(),100);
+}
+
 const RESEAU_A = [
   {nom:"Perrache",lat:45.7492,lon:4.8266},{nom:"Ampère - Victor Hugo",lat:45.7524,lon:4.8321},
   {nom:"Bellecour",lat:45.7578,lon:4.8320},{nom:"Cordeliers",lat:45.7622,lon:4.8335},
