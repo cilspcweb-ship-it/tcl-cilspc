@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Itinéraire — Perrache · Confluence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+:root{
+  --bordeaux:#8B1A2C;--bordeaux2:#6d1522;--or:#C8A951;--or-light:#e8cc7a;
+  --creme:#FAF6EF;--creme2:#f0ebe0;--texte:#2c1810;--muted:#7a6a5a;
+  --border:#d4c4a8;--blanc:#fff;
+  --metro:#e05c00;--tram:#0070b8;--bus:#2e8b3a;--velov:#e8b400;--dott:#00b4d8;
+  --radius:10px;--shadow:0 2px 12px rgba(139,26,44,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-serif;font-size:15px;min-height:100%}
+
+/* HEADER */
+#header{background:var(--bordeaux);padding:16px 20px 12px;border-bottom:3px solid var(--or)}
+#header h1{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--creme);line-height:1.2}
+#header h1 span{color:var(--or-light)}
+#header p{font-size:11px;color:rgba(250,246,239,.55);margin-top:3px}
+
+/* FORMULAIRE */
+#formulaire{padding:16px 20px;background:var(--blanc);border-bottom:1px solid var(--border)}
+
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.field input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--texte);background:var(--blanc);outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--bordeaux)}
+.field input::placeholder{color:#bbb}
+
+/* SUGGESTIONS */
+.suggestions{position:absolute;z-index:9999;background:var(--blanc);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;width:100%;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.suggestion-item{padding:10px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--creme2)}
+.suggestion-item:hover{background:var(--creme2)}
+.suggestion-item:last-child{border-bottom:none}
+.field-wrap{position:relative}
+
+/* OPTIONS */
+.options-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.option-btn{flex:1;min-width:80px;padding:8px 6px;border:1.5px solid var(--border);border-radius:8px;background:var(--blanc);color:var(--muted);font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;cursor:pointer;text-align:center;transition:all .2s}
+.option-btn.active{background:var(--bordeaux);border-color:var(--bordeaux);color:#fff}
+
+.modes-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.mode-check{display:flex;align-items:center;gap:6px;padding:6px 10px;border:1.5px solid var(--border);border-radius:20px;cursor:pointer;font-size:12px;font-weight:500;color:var(--muted);background:var(--blanc);transition:all .2s;user-select:none}
+.mode-check.active{border-color:var(--bordeaux);color:var(--bordeaux);background:#fff5f5}
+.mode-check input{display:none}
+.mode-dot{width:8px;height:8px;border-radius:50%}
+
+#btn-chercher{width:100%;padding:12px;background:var(--bordeaux);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:background .2s}
+#btn-chercher:hover{background:var(--bordeaux2)}
+#btn-chercher:disabled{background:#ccc;cursor:not-allowed}
+
+/* CARTE */
+#map{height:220px;border-bottom:1px solid var(--border)}
+
+/* RÉSULTAT */
+#resultat{padding:16px 20px}
+#etat-msg{padding:14px 16px;border-radius:8px;font-size:13px;display:none;margin-bottom:14px}
+#etat-msg.load{background:var(--creme2);color:var(--muted)}
+#etat-msg.err{background:#fff3f3;border-left:4px solid var(--bordeaux);color:var(--bordeaux2)}
+#etat-msg.ok{background:#f0f9f0;border-left:4px solid #2e8b3a;color:#1a5c1a}
+
+/* ÉTAPES */
+.etape{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--creme2)}
+.etape:last-child{border-bottom:none}
+.etape-icone{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;background:var(--creme2)}
+.etape-corps{flex:1}
+.etape-titre{font-size:14px;font-weight:600;color:var(--texte);margin-bottom:2px}
+.etape-detail{font-size:12px;color:var(--muted);line-height:1.5}
+.etape-duree{font-size:13px;font-weight:600;color:var(--bordeaux);white-space:nowrap}
+.badge-ligne{display:inline-block;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:700;color:#fff;margin-right:4px}
+.etape-dispo{font-size:11px;margin-top:3px}
+.dispo-ok{color:#2e8b3a}
+.dispo-warn{color:#e07000}
+.dispo-ko{color:#c0392b}
+
+.trajet-header{background:var(--creme2);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.trajet-total{font-size:16px;font-weight:700;color:var(--bordeaux)}
+.trajet-detail{font-size:12px;color:var(--muted)}
+
+.lien-maps{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:4px 10px;background:var(--creme2);border-radius:20px;font-size:11px;color:var(--bordeaux);text-decoration:none;font-weight:500}
+.lien-maps:hover{background:var(--border)}
+
+#footer{text-align:center;padding:14px 20px 24px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);margin-top:16px}
+
+@media(max-width:480px){
+  #formulaire{padding:12px}
+  #resultat{padding:12px}
+}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>🗺️ Itinéraire<br><span>Perrache · Confluence</span></h1>
+  <p>Transport multimodal en temps réel</p>
+</div>
+
+<div id="formulaire">
+  <div class="field">
+    <label>📍 Votre position</label>
+    <div class="field-wrap">
+      <input type="text" id="input-depart" placeholder="Ma position actuelle…" autocomplete="off">
+      <div class="suggestions" id="sug-depart" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>🎯 Destination</label>
+    <div class="field-wrap">
+      <input type="text" id="input-dest" placeholder="Adresse, lieu, quartier…" autocomplete="off">
+      <div class="suggestions" id="sug-dest" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Priorité</label>
+    <div class="options-row">
+      <button class="option-btn active" onclick="setPriorite('rapide',this)">⚡ Le plus rapide</button>
+      <button class="option-btn" onclick="setPriorite('marche',this)">🚶 Marcher</button>
+      <button class="option-btn" onclick="setPriorite('min-marche',this)">🪑 Peu marcher</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Modes de transport</label>
+    <div class="modes-row">
+      <label class="mode-check active" id="mode-tcl">
+        <input type="checkbox" checked onchange="toggleMode('tcl')">
+        <span class="mode-dot" style="background:var(--metro)"></span> TCL
+      </label>
+      <label class="mode-check active" id="mode-velov">
+        <input type="checkbox" checked onchange="toggleMode('velov')">
+        <span class="mode-dot" style="background:var(--velov)"></span> Vélo'v
+      </label>
+      <label class="mode-check active" id="mode-dott">
+        <input type="checkbox" checked onchange="toggleMode('dott')">
+        <span class="mode-dot" style="background:var(--dott)"></span> Dott
+      </label>
+    </div>
+  </div>
+
+  <button id="btn-chercher" onclick="chercher()">Trouver mon itinéraire →</button>
+</div>
+
+<div id="map"></div>
+
+<div id="resultat">
+  <div id="etat-msg"></div>
+  <div id="etapes"></div>
+</div>
+
+<div id="footer">
+  Données : Grand Lyon Data · Vélo'v · Dott · OpenStreetMap
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ===================== CONFIG =====================
+const TCL_API = "/tcl-passages"; // proxy Cloudflare
+const VELOV_API = "https://data.grandlyon.com/fr/datapusher/ws/rdata/jcd_jcdecaux.jcdvelov/all.json?maxfeatures=500&start=1";
+const DOTT_API = "https://gbfs.api.ridedott.com/public/v2/lyon/free_bike_status.json";
+const NOMINATIM = "https://nominatim.openstreetmap.org";
+const OSRM_WALK = "https://router.project-osrm.org/route/v1/foot";
+
+// ===================== ÉTAT =====================
+let priorite = "rapide";
+let modes = { tcl: true, velov: true, dott: true };
+let coordDepart = null;
+let coordDest = null;
+let map = null;
+let markersLayer = null;
+let routeLayer = null;
+
+// ===================== CARTE =====================
+window.addEventListener("load", () => {
+  map = L.map("map", { zoomControl: true }).setView([45.749, 4.827], 14);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© OpenStreetMap"
+  }).addTo(map);
+  markersLayer = L.layerGroup().addTo(map);
+  routeLayer = L.layerGroup().addTo(map);
+
+  // Géolocalisation auto au chargement
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      coordDepart = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      document.getElementById("input-depart").value = "Ma position actuelle";
+      map.setView([coordDepart.lat, coordDepart.lon], 15);
+      ajouterMarqueur(coordDepart.lat, coordDepart.lon, "📍", "Votre position");
+    });
+  }
+
+  // Clic sur carte = définir destination
+  map.on("click", e => {
+    coordDest = { lat: e.latlng.lat, lon: e.latlng.lng };
+    reverseGeocode(coordDest.lat, coordDest.lon).then(nom => {
+      document.getElementById("input-dest").value = nom || `${coordDest.lat.toFixed(5)}, ${coordDest.lon.toFixed(5)}`;
+    });
+    ajouterMarqueurDest(coordDest.lat, coordDest.lon);
+  });
+
+  // Rafraîchissement visibilité mobile
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") map.invalidateSize();
+  });
+});
+
+function ajouterMarqueur(lat, lon, emoji, titre) {
+  const icon = L.divIcon({ html: `<div style="font-size:22px;line-height:1">${emoji}</div>`, className: "", iconAnchor: [11,22] });
+  L.marker([lat, lon], { icon }).addTo(markersLayer).bindPopup(titre);
+}
+
+function ajouterMarqueurDest(lat, lon) {
+  markersLayer.clearLayers();
+  if (coordDepart) ajouterMarqueur(coordDepart.lat, coordDepart.lon, "📍", "Votre position");
+  ajouterMarqueur(lat, lon, "🎯", "Destination");
+}
+
+// ===================== OPTIONS =====================
+function setPriorite(val, btn) {
+  priorite = val;
+  document.querySelectorAll(".option-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+}
+
+function toggleMode(mode) {
+  modes[mode] = !modes[mode];
+  document.getElementById("mode-" + mode).classList.toggle("active", modes[mode]);
+}
+
+// ===================== AUTOCOMPLÉTION =====================
+let timerNom = null;
+
+function setupAutocomplete(inputId, sugId, onSelect) {
+  const input = document.getElementById(inputId);
+  const sug = document.getElementById(sugId);
+
+  input.addEventListener("input", () => {
+    clearTimeout(timerNom);
+    const q = input.value.trim();
+    if (q.length < 3) { sug.style.display = "none"; return; }
+    timerNom = setTimeout(async () => {
+      const res = await fetch(`${NOMINATIM}/search?q=${encodeURIComponent(q + " Lyon")}&format=json&limit=5&countrycodes=fr`);
+      const data = await res.json();
+      if (!data.length) { sug.style.display = "none"; return; }
+      sug.innerHTML = data.map(d => `<div class="suggestion-item" data-lat="${d.lat}" data-lon="${d.lon}" data-nom="${d.display_name}">${d.display_name.split(",").slice(0,3).join(", ")}</div>`).join("");
+      sug.style.display = "block";
+      sug.querySelectorAll(".suggestion-item").forEach(el => {
+        el.addEventListener("click", () => {
+          const coord = { lat: parseFloat(el.dataset.lat), lon: parseFloat(el.dataset.lon) };
+          input.value = el.dataset.nom.split(",").slice(0,2).join(", ");
+          sug.style.display = "none";
+          onSelect(coord);
+        });
+      });
+    }, 400);
+  });
+
+  document.addEventListener("click", e => { if (!sug.contains(e.target) && e.target !== input) sug.style.display = "none"; });
+}
+
+async function reverseGeocode(lat, lon) {
+  try {
+    const r = await fetch(`${NOMINATIM}/reverse?lat=${lat}&lon=${lon}&format=json`);
+    const d = await r.json();
+    return d.display_name ? d.display_name.split(",").slice(0,2).join(", ") : null;
+  } catch { return null; }
+}
+
+window.addEventListener("load", () => {
+  setupAutocomplete("input-depart", "sug-depart", coord => {
+    coordDepart = coord;
+    map.setView([coord.lat, coord.lon], 15);
+    ajouterMarqueur(coord.lat, coord.lon, "📍", "Votre position");
+  });
+  setupAutocomplete("input-dest", "sug-dest", coord => {
+    coordDest = coord;
+    ajouterMarqueurDest(coord.lat, coord.lon);
+    map.setView([coord.lat, coord.lon], 14);
+  });
+});
+
+// ===================== UTILITAIRES =====================
+function dist(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function mToMin(metres, vitesse) { return Math.round(metres / vitesse / 60); }
+
+function lienGoogleMaps(latD, lonD, latA, lonA) {
+  return `https://www.google.com/maps/dir/?api=1&origin=${latD},${lonD}&destination=${latA},${lonA}&travelmode=walking`;
+}
+
+async function distanceMarche(lat1, lon1, lat2, lon2) {
+  try {
+    const r = await fetch(`${OSRM_WALK}/${lon1},${lat1};${lon2},${lat2}?overview=false`);
+    const d = await r.json();
+    if (d.code === "Ok") return { metres: d.routes[0].distance, secondes: d.routes[0].duration };
+  } catch {}
+  const m = dist(lat1, lon1, lat2, lon2);
+  return { metres: m, secondes: m / 1.2 };
+}
+
+function couleurLigne(ligne) {
+  const u = String(ligne).toUpperCase();
+  if (["A","B","C","D"].includes(u)) return "#e05c00";
+  if (/^T\d/.test(u)) return "#0070b8";
+  return "#2e8b3a";
+}
+
+function showEtat(msg, type) {
+  const el = document.getElementById("etat-msg");
+  el.textContent = msg;
+  el.className = type;
+  el.style.display = "block";
+}
+
+function hideEtat() { document.getElementById("etat-msg").style.display = "none"; }
+
+// ===================== DONNÉES TEMPS RÉEL =====================
+async function getVelov() {
+  try {
+    const r = await fetch(VELOV_API);
+    const d = await r.json();
+    return (d.values || []).filter(s => s.status === "OPEN");
+  } catch { return []; }
+}
+
+async function getDott() {
+  try {
+    const r = await fetch(DOTT_API);
+    const d = await r.json();
+    return (d.data?.bikes || []).filter(b => !b.is_reserved && !b.is_disabled);
+  } catch { return []; }
+}
+
+async function getArretsTCL() {
+  // Données statiques des arrêts du quartier (coordonnées GPS)
+  return [
+    { nom:"Perrache", lat:45.7492, lon:4.8266, lignes:["A","T1","T2"] },
+    { nom:"Ampère - Victor Hugo", lat:45.7524, lon:4.8321, lignes:["A"] },
+    { nom:"Sainte-Blandine", lat:45.7445, lon:4.8212, lignes:["T1","T2"] },
+    { nom:"Hôtel Région Montrochet", lat:45.7378, lon:4.8178, lignes:["T1","T2"] },
+    { nom:"Musée des Confluences", lat:45.7326, lon:4.8198, lignes:["T1"] },
+    { nom:"Place des Archives", lat:45.7468, lon:4.8245, lignes:["T1","T2"] },
+    { nom:"Confluence", lat:45.7392, lon:4.8155, lignes:["S1"] },
+    { nom:"Montrochet", lat:45.7358, lon:4.8167, lignes:["S1"] },
+    { nom:"Charlemagne - C. Perier", lat:45.7535, lon:4.8345, lignes:["S1"] },
+    { nom:"Claudius Collonge", lat:45.7512, lon:4.8298, lignes:["S1","63"] },
+  ];
+}
+
+// ===================== ALGORITHME ITINÉRAIRE =====================
+async function chercher() {
+  if (!coordDepart) { showEtat("📍 Activez la géolocalisation ou saisissez votre position.", "err"); return; }
+  if (!coordDest) { showEtat("🎯 Saisissez ou cliquez sur la carte pour choisir une destination.", "err"); return; }
+
+  const btn = document.getElementById("btn-chercher");
+  btn.disabled = true;
+  btn.textContent = "Calcul en cours…";
+  showEtat("Recherche du meilleur itinéraire…", "load");
+  document.getElementById("etapes").innerHTML = "";
+  routeLayer.clearLayers();
+
+  try {
+    // Charger données en parallèle
+    const [arrets, velovStations, dottBikes] = await Promise.all([
+      getArretsTCL(),
+      modes.velov ? getVelov() : Promise.resolve([]),
+      modes.dott ? getDott() : Promise.resolve([]),
+    ]);
+
+    // Distance directe à pied
+    const marcheDirect = await distanceMarche(coordDepart.lat, coordDepart.lon, coordDest.lat, coordDest.lon);
+    const dureeMarche = Math.round(marcheDirect.secondes / 60);
+
+    // Si destination < 400m ou priorité marche : itinéraire piéton direct
+    if (priorite === "marche" || marcheDirect.metres < 400) {
+      afficherItiMarcheSeule(dureeMarche, marcheDirect.metres);
+      return;
+    }
+
+    // Trouver arrêt TCL le plus proche du départ
+    const arretsAvecDist = arrets.map(a => ({
+      ...a,
+      distDepart: dist(coordDepart.lat, coordDepart.lon, a.lat, a.lon),
+      distDest: dist(coordDest.lat, coordDest.lon, a.lat, a.lon),
+    }));
+
+    const arretDepart = arretsAvecDist.sort((a,b) => a.distDepart - b.distDepart)[0];
+    const arretDest = arretsAvecDist.sort((a,b) => a.distDest - b.distDest)[0];
+
+    // Chercher Vélov proche du départ avec vélos dispos
+    let velovDepart = null;
+    if (modes.velov && velovStations.length) {
+      const vd = velovStations
+        .filter(s => s.available_bikes > 0)
+        .map(s => ({ ...s, d: dist(coordDepart.lat, coordDepart.lon, s.lat, s.lng) }))
+        .sort((a,b) => a.d - b.d)[0];
+      if (vd && vd.d < 500) velovDepart = vd;
+    }
+
+    // Chercher Dott proche du départ
+    let dottDepart = null;
+    if (modes.dott && dottBikes.length) {
+      const dd = dottBikes
+        .map(b => ({ ...b, d: dist(coordDepart.lat, coordDepart.lon, b.lat, b.lon) }))
+        .sort((a,b) => a.d - b.d)[0];
+      if (dd && dd.d < 400) dottDepart = dd;
+    }
+
+    // Chercher station Vélov proche de l'arret destination avec places libres
+    let velovDest = null;
+    if (modes.velov && velovStations.length) {
+      const vdest = velovStations
+        .filter(s => s.available_bike_stands > 0)
+        .map(s => ({ ...s, d: dist(arretDest.lat, arretDest.lon, s.lat, s.lng) }))
+        .sort((a,b) => a.d - b.d)[0];
+      if (vdest && vdest.d < 500) velovDest = vdest;
+    }
+
+    // Construire l'itinéraire
+    const etapes = [];
+    let dureeTotal = 0;
+
+    // ÉTAPE 1 : Rejoindre le premier arrêt TCL
+    const marcheVersArret = await distanceMarche(coordDepart.lat, coordDepart.lon, arretDepart.lat, arretDepart.lon);
+    const dureeVersArret = Math.round(marcheVersArret.secondes / 60);
+
+    // Choisir le meilleur mode pour rejoindre l'arrêt
+    if (dottDepart && dottDepart.d < arretDepart.distDepart * 0.7 && priorite !== "min-marche") {
+      // Dott jusqu'à l'arrêt
+      const dureeVersDott = mToMin(dottDepart.d, 1.2);
+      const dureeEnDott = mToMin(arretDepart.distDepart, 4.0);
+      etapes.push({
+        icone: "🛴",
+        titre: `Marchez ${dureeVersDott} min jusqu'à la trottinette Dott`,
+        detail: `Trottinette disponible à ${Math.round(dottDepart.d)} m`,
+        duree: dureeVersDott,
+        maps: lienGoogleMaps(coordDepart.lat, coordDepart.lon, dottDepart.lat, dottDepart.lon),
+        couleur: "#00b4d8",
+      });
+      etapes.push({
+        icone: "🛴",
+        titre: `Prenez la Dott jusqu'à ${arretDepart.nom}`,
+        detail: `~${Math.round(arretDepart.distDepart)} m en trottinette`,
+        duree: dureeEnDott,
+        maps: lienGoogleMaps(dottDepart.lat, dottDepart.lon, arretDepart.lat, arretDepart.lon),
+        couleur: "#00b4d8",
+      });
+      dureeTotal += dureeVersDott + dureeEnDott;
+    } else if (velovDepart && modes.velov && priorite !== "min-marche") {
+      // Vélov jusqu'à l'arrêt
+      const dureeVersVelov = mToMin(velovDepart.d, 1.2);
+      const dureeEnVelov = mToMin(arretDepart.distDepart, 3.5);
+      etapes.push({
+        icone: "🚲",
+        titre: `Marchez ${dureeVersVelov} min jusqu'à la station Vélo'v`,
+        detail: `Station "${velovDepart.name}" — ${velovDepart.available_bikes} vélo(s) disponible(s)`,
+        duree: dureeVersVelov,
+        maps: lienGoogleMaps(coordDepart.lat, coordDepart.lon, velovDepart.lat, velovDepart.lng),
+        couleur: "#e8b400",
+        dispo: velovDepart.available_bikes,
+      });
+      etapes.push({
+        icone: "🚲",
+        titre: `Pédalez jusqu'à ${arretDepart.nom}`,
+        detail: `~${Math.round(arretDepart.distDepart)} m à vélo`,
+        duree: dureeEnVelov,
+        maps: lienGoogleMaps(velovDepart.lat, velovDepart.lng, arretDepart.lat, arretDepart.lon),
+        couleur: "#e8b400",
+      });
+      dureeTotal += dureeVersVelov + dureeEnVelov;
+    } else {
+      // Marche vers l'arrêt
+      etapes.push({
+        icone: "🚶",
+        titre: `Marchez jusqu'à ${arretDepart.nom}`,
+        detail: `${Math.round(marcheVersArret.metres)} m — environ ${dureeVersArret} min`,
+        duree: dureeVersArret,
+        maps: lienGoogleMaps(coordDepart.lat, coordDepart.lon, arretDepart.lat, arretDepart.lon),
+        couleur: "#7a6a5a",
+      });
+      dureeTotal += dureeVersArret;
+    }
+
+    // ÉTAPE 2 : TCL
+    if (modes.tcl && arretDepart.nom !== arretDest.nom) {
+      const ligneTCL = arretDepart.lignes[0];
+      const dureeTCL = Math.max(2, Math.round(dist(arretDepart.lat, arretDepart.lon, arretDest.lat, arretDest.lon) / 8000 * 60));
+      etapes.push({
+        icone: "🚇",
+        titre: `Prenez la ligne ${ligneTCL} à ${arretDepart.nom}`,
+        detail: `Direction ${arretDest.nom} — environ ${dureeTCL} min`,
+        duree: dureeTCL,
+        ligne: ligneTCL,
+        couleur: couleurLigne(ligneTCL),
+      });
+      etapes.push({
+        icone: "📍",
+        titre: `Descendez à ${arretDest.nom}`,
+        detail: "",
+        duree: 0,
+        couleur: couleurLigne(ligneTCL),
+      });
+      dureeTotal += dureeTCL + 2; // +2 min attente
+    }
+
+    // ÉTAPE 3 : De l'arrêt destination vers la destination finale
+    const marcheFin = await distanceMarche(arretDest.lat, arretDest.lon, coordDest.lat, coordDest.lon);
+    const dureeFin = Math.round(marcheFin.secondes / 60);
+
+    if (velovDest && modes.velov && marcheFin.metres > 400) {
+      const dureeVersVelovDest = mToMin(velovDest.d, 1.2);
+      const dureeEnVelovDest = mToMin(marcheFin.metres, 3.5);
+      etapes.push({
+        icone: "🚲",
+        titre: `Prenez un Vélo'v à la station "${velovDest.name}"`,
+        detail: `${velovDest.available_bikes} vélo(s) dispo — ${velovDest.available_bike_stands} place(s) libres à destination`,
+        duree: dureeVersVelovDest + dureeEnVelovDest,
+        maps: lienGoogleMaps(arretDest.lat, arretDest.lon, velovDest.lat, velovDest.lng),
+        couleur: "#e8b400",
+        dispo: velovDest.available_bikes,
+      });
+      dureeTotal += dureeVersVelovDest + dureeEnVelovDest;
+    } else {
+      etapes.push({
+        icone: "🚶",
+        titre: "Marchez jusqu'à votre destination",
+        detail: `${Math.round(marcheFin.metres)} m — environ ${dureeFin} min`,
+        duree: dureeFin,
+        maps: lienGoogleMaps(arretDest.lat, arretDest.lon, coordDest.lat, coordDest.lon),
+        couleur: "#7a6a5a",
+      });
+      dureeTotal += dureeFin;
+    }
+
+    // Étape finale
+    etapes.push({
+      icone: "🎯",
+      titre: "Vous êtes arrivé !",
+      detail: document.getElementById("input-dest").value,
+      duree: 0,
+      couleur: "#2e8b3a",
+    });
+
+    afficherEtapes(etapes, dureeTotal, dureeMarche);
+    tracerCarte(arretDepart, arretDest);
+
+  } catch(e) {
+    showEtat("Erreur lors du calcul : " + e.message, "err");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Trouver mon itinéraire →";
+  }
+}
+
+function afficherItiMarcheSeule(duree, metres) {
+  hideEtat();
+  const html = `
+    <div class="trajet-header">
+      <div><div class="trajet-total">🚶 À pied</div><div class="trajet-detail">${Math.round(metres)} m</div></div>
+      <div class="trajet-total">${duree} min</div>
+    </div>
+    <div class="etape">
+      <div class="etape-icone">🚶</div>
+      <div class="etape-corps">
+        <div class="etape-titre">Marchez jusqu'à votre destination</div>
+        <div class="etape-detail">Distance courte — pas besoin de transport</div>
+        <a class="lien-maps" href="${lienGoogleMaps(coordDepart.lat,coordDepart.lon,coordDest.lat,coordDest.lon)}" target="_blank">📱 Ouvrir dans Google Maps</a>
+      </div>
+      <div class="etape-duree">${duree} min</div>
+    </div>`;
+  document.getElementById("etapes").innerHTML = html;
+}
+
+function afficherEtapes(etapes, dureeTotal, dureeMarcheDirecte) {
+  hideEtat();
+  const economie = dureeMarcheDirecte - dureeTotal;
+  let html = `
+    <div class="trajet-header">
+      <div>
+        <div class="trajet-total">⚡ ${dureeTotal} min</div>
+        <div class="trajet-detail">${economie > 0 ? `${economie} min de gagnées vs à pied` : "Trajet optimisé"}</div>
+      </div>
+    </div>`;
+
+  etapes.forEach(e => {
+    if (e.duree === 0 && !e.detail) return;
+    const bdg = e.ligne ? `<span class="badge-ligne" style="background:${e.couleur}">${e.ligne}</span>` : "";
+    const dureeStr = e.duree > 0 ? `${e.duree} min` : "";
+    let dispoHtml = "";
+    if (e.dispo !== undefined) {
+      const cls = e.dispo >= 3 ? "dispo-ok" : e.dispo >= 1 ? "dispo-warn" : "dispo-ko";
+      dispoHtml = `<div class="etape-dispo ${cls}">● ${e.dispo} vélo(s) disponible(s)</div>`;
+    }
+    const mapsHtml = e.maps ? `<a class="lien-maps" href="${e.maps}" target="_blank">📱 Guider vers ce point</a>` : "";
+    html += `
+      <div class="etape">
+        <div class="etape-icone" style="background:${e.couleur}22">${e.icone}</div>
+        <div class="etape-corps">
+          <div class="etape-titre">${bdg}${e.titre}</div>
+          ${e.detail ? `<div class="etape-detail">${e.detail}</div>` : ""}
+          ${dispoHtml}
+          ${mapsHtml}
+        </div>
+        ${dureeStr ? `<div class="etape-duree">${dureeStr}</div>` : ""}
+      </div>`;
+  });
+
+  document.getElementById("etapes").innerHTML = html;
+}
+
+function tracerCarte(arretD, arretA) {
+  routeLayer.clearLayers();
+  if (coordDepart && arretD) {
+    L.polyline([[coordDepart.lat, coordDepart.lon],[arretD.lat, arretD.lon]], { color: "#7a6a5a", weight: 3, dashArray: "6 4" }).addTo(routeLayer);
+  }
+  if (arretD && arretA && arretD.nom !== arretA.nom) {
+    L.polyline([[arretD.lat, arretD.lon],[arretA.lat, arretA.lon]], { color: "#e05c00", weight: 4 }).addTo(routeLayer);
+  }
+  if (arretA && coordDest) {
+    L.polyline([[arretA.lat, arretA.lon],[coordDest.lat, coordDest.lon]], { color: "#7a6a5a", weight: 3, dashArray: "6 4" }).addTo(routeLayer);
+  }
+  // Ajuster la vue
+  const points = [];
+  if (coordDepart) points.push([coordDepart.lat, coordDepart.lon]);
+  if (coordDest) points.push([coordDest.lat, coordDest.lon]);
+  if (points.length === 2) map.fitBounds(points, { padding: [30, 30] });
+}
+</script>
+</body>
+</html>
