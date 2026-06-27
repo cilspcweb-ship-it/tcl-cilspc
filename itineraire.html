@@ -159,8 +159,8 @@ window.addEventListener("load",()=>{
     navigator.geolocation.getCurrentPosition(pos=>{
       coordDepart={lat:pos.coords.latitude,lon:pos.coords.longitude};
       document.getElementById("input-depart").value="Ma position actuelle";
-      ajouterMarqueur(coordDepart.lat,coordDepart.lon,"📍","Votre position");
       map.setView([coordDepart.lat,coordDepart.lon],15);
+      ajouterMarqueur(coordDepart.lat,coordDepart.lon,"📍","Votre position");
     });
   }
 
@@ -177,7 +177,6 @@ window.addEventListener("load",()=>{
   document.addEventListener("visibilitychange",()=>{
     if(document.visibilityState==="visible") map.invalidateSize();
   });
-  window.addEventListener("scroll",()=>map.invalidateSize(),{once:true});
 
   setupAutocomplete("input-depart","sug-depart",coord=>{
     coordDepart=coord;
