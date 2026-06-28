@@ -2145,13 +2145,75 @@ window.addEventListener("load",()=>{
     })
     .catch(()=>console.log("GTFS étendu non disponible — données de base utilisées"));
 
-  if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(pos=>{
-      coordDepart={lat:pos.coords.latitude,lon:pos.coords.longitude};
-      document.getElementById("input-depart").value="Ma position actuelle";
-      ajouterMarqueur(coordDepart.lat,coordDepart.lon,"📍","Votre position");
-    });
+  // Géolocalisation — avec gestion du refus (iframe Wix, mobile bloqué, etc.)
+  function demanderGeolocSilencieuse(){
+    if(!navigator.geolocation) return afficherBoutonGeoloc("Géolocalisation non supportée par votre navigateur");
+    navigator.geolocation.getCurrentPosition(
+      pos=>{
+        coordDepart={lat:pos.coords.latitude,lon:pos.coords.longitude};
+        document.getElementById("input-depart").value="📍 Ma position actuelle";
+        ajouterMarqueur(coordDepart.lat,coordDepart.lon,"📍","Votre position");
+        // Masquer le bouton si visible
+        const btn=document.getElementById("btn-geoloc");
+        if(btn) btn.style.display="none";
+      },
+      err=>{
+        // Refus ou erreur — afficher un bouton pour réessayer ou saisir manuellement
+        let msg="";
+        if(err.code===1) msg="Géolocalisation refusée — activez-la dans les paramètres de votre navigateur";
+        else if(err.code===2) msg="Position indisponible — tapez votre adresse ci-dessous";
+        else msg="Délai dépassé — tapez votre adresse ci-dessous";
+        afficherBoutonGeoloc(msg);
+      },
+      {timeout:8000, enableHighAccuracy:false}
+    );
   }
+
+  function afficherBoutonGeoloc(msg){
+    const input=document.getElementById("input-depart");
+    input.placeholder="Tapez votre adresse de départ…";
+    // Insérer un bouton de relance sous le champ départ
+    if(!document.getElementById("btn-geoloc")){
+      const hint=document.createElement("div");
+      hint.id="btn-geoloc";
+      hint.style.cssText="margin-top:6px;display:flex;flex-direction:column;gap:6px";
+      hint.innerHTML=`
+        <div style="font-size:11px;color:#c0392b;display:flex;align-items:center;gap:5px">
+          ⚠️ <span id="geoloc-msg">${msg}</span>
+        </div>
+        <button onclick="demanderGeolocActive()" style="display:inline-flex;align-items:center;gap:6px;background:var(--bordeaux);border:none;border-radius:8px;padding:7px 14px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;color:#fff;cursor:pointer;width:fit-content">
+          📡 Réessayer la géolocalisation
+        </button>`;
+      input.parentElement.parentElement.appendChild(hint);
+    } else {
+      document.getElementById("geoloc-msg").textContent=msg;
+    }
+  }
+
+  // Appelé par le bouton — demande avec interaction utilisateur (requis sur iOS/Safari)
+  window.demanderGeolocActive=function(){
+    const btn=document.querySelector("#btn-geoloc button");
+    if(btn){btn.textContent="⏳ Localisation en cours…";btn.disabled=true;}
+    navigator.geolocation.getCurrentPosition(
+      pos=>{
+        coordDepart={lat:pos.coords.latitude,lon:pos.coords.longitude};
+        document.getElementById("input-depart").value="📍 Ma position actuelle";
+        ajouterMarqueur(coordDepart.lat,coordDepart.lon,"📍","Votre position");
+        const g=document.getElementById("btn-geoloc");
+        if(g) g.style.display="none";
+      },
+      err=>{
+        const btn2=document.querySelector("#btn-geoloc button");
+        if(btn2){btn2.textContent="📡 Réessayer la géolocalisation";btn2.disabled=false;}
+        let msg="Refus confirmé — tapez votre adresse dans le champ ci-dessus";
+        if(err.code===2) msg="Signal GPS indisponible — tapez votre adresse";
+        document.getElementById("geoloc-msg").textContent=msg;
+      },
+      {timeout:10000, enableHighAccuracy:true}
+    );
+  };
+
+  demanderGeolocSilencieuse();
 
   map.on("click",e=>{
     coordDest={lat:e.latlng.lat,lon:e.latlng.lng};
