@@ -3,7 +3,69 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Itinéraire Lyon multimodal</title>
+<title>Itinéraire Lyon multimodal — TCL, Vélo'v, Dott | CIL SPC</title>
+
+<!-- SEO principal -->
+<meta name="description" content="Calculez votre itinéraire multimodal dans Lyon et la Métropole : métro, tram, bus TCL, Vélo'v et Dott en temps réel. Service gratuit proposé par le CIL Sud Presqu'île Confluence (Lyon 2e).">
+<meta name="keywords" content="itinéraire Lyon, transports Lyon, TCL Lyon, métro Lyon, tram Lyon, Vélov Lyon, Dott Lyon, mobilité Lyon, CIL SPC, Perrache, Confluence, Lyon 2e, itinéraire multimodal">
+<meta name="author" content="CIL Sud Presqu'île Confluence — www.cilspc.fr">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://tcl-cilspc.pages.dev/itineraire">
+
+<!-- Lien vers le site principal -->
+<link rel="home" href="https://www.cilspc.fr">
+
+<!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tcl-cilspc.pages.dev/itineraire">
+<meta property="og:title" content="Itinéraire Lyon multimodal — TCL, Vélo'v, Dott">
+<meta property="og:description" content="Calculez votre itinéraire dans Lyon et la Métropole : métro, tram, bus, Vélo'v et Dott en temps réel. Service gratuit du CIL Sud Presqu'île Confluence.">
+<meta property="og:image" content="https://www.cilspc.fr/logo.png">
+<meta property="og:site_name" content="CIL Sud Presqu'île Confluence">
+<meta property="og:locale" content="fr_FR">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Itinéraire Lyon multimodal — TCL, Vélo'v, Dott">
+<meta name="twitter:description" content="Calculez votre itinéraire dans Lyon : métro, tram, bus TCL, Vélo'v et Dott en temps réel. Service du CIL SPC.">
+
+<!-- Données structurées Schema.org -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Itinéraire Lyon multimodal",
+  "url": "https://tcl-cilspc.pages.dev/itineraire",
+  "description": "Application de calcul d'itinéraire multimodal pour Lyon et la Métropole lyonnaise : TCL (métro, tram, bus), Vélo'v et Dott en temps réel.",
+  "applicationCategory": "TravelApplication",
+  "operatingSystem": "Web",
+  "inLanguage": "fr",
+  "isAccessibleForFree": true,
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "EUR"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "CIL Sud Presqu'île Confluence",
+    "url": "https://www.cilspc.fr",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "7 rue Denuzière",
+      "postalCode": "69002",
+      "addressLocality": "Lyon",
+      "addressCountry": "FR"
+    }
+  },
+  "areaServed": {
+    "@type": "City",
+    "name": "Lyon",
+    "sameAs": "https://www.wikidata.org/wiki/Q456"
+  }
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -3018,10 +3080,11 @@ function selectionnerOption(idx){
 
 function afficherItineraire(iti){
   if(!iti)return;
-  const dMarche=Math.round(mToMin(dist(coordDepart.lat,coordDepart.lon,coordDest.lat,coordDest.lon),V_MARCHE));
+  const dDirecteM=dist(coordDepart.lat,coordDepart.lon,coordDest.lat,coordDest.lon);
+  const dMarche=Math.round(mToMin(dDirecteM,V_MARCHE));
   // Comparer toujours avec la vraie marche directe, pas l'option Dott/Velov
   const ecoBase=itinerairesCalcules.find(o=>o.type==="marche"&&o.label.includes("À pied"));
-  const dMarcheRef=ecoBase?Math.round(mToMin(dist(coordDepart.lat,coordDepart.lon,coordDest.lat,coordDest.lon),V_MARCHE)):dMarche;
+  const dMarcheRef=ecoBase?Math.round(mToMin(dDirecteM,V_MARCHE)):dMarche;
   const eco=dMarcheRef-iti.duree;
   const tempsReelBadge=iti._tempsReel?`<span style="font-size:10px;background:#2e8b3a;color:#fff;padding:2px 6px;border-radius:10px;margin-left:8px;vertical-align:middle">⏱ Temps réel</span>`:"";
   let html=`<div class="trajet-header"><div><div class="trajet-total">⚡ ${iti.duree} min${tempsReelBadge}</div><div class="trajet-detail">${eco>0?`${eco} min gagnées vs à pied`:"Trajet optimisé"}</div></div></div>`;
@@ -3034,6 +3097,36 @@ function afficherItineraire(iti){
     const maps=e.maps?`<a class="lien-maps" href="${e.maps}" target="_blank">📱 Guider vers ce point</a>`:"";
     html+=`<div class="etape"><div class="etape-icone" style="background:${e.couleur}22">${e.icone}</div><div class="etape-corps"><div class="etape-titre">${bdg}${e.titre}</div>${e.detail?`<div class="etape-detail">${e.detail}</div>`:""}${dispo}${maps}</div>${dur?`<div class="etape-duree">${dur}</div>`:""}</div>`;
   });
+
+  // Bloc taxi/VTC si marche > 2km et seul transport disponible est la marche
+  const seuloptions=itinerairesCalcules.filter(o=>o.type!=="marche");
+  if(dDirecteM>2000&&seuloptions.length===0){
+    const destEncoded=encodeURIComponent(`${coordDest.lat},${coordDest.lon}`);
+    const depEncoded=encodeURIComponent(`${coordDepart.lat},${coordDepart.lon}`);
+    html+=`
+    <div style="margin:14px 0 0;padding:12px 14px;background:#fff8f0;border:1.5px solid #e8a000;border-radius:10px">
+      <div style="font-size:13px;font-weight:700;color:#8B4500;margin-bottom:4px">🚕 Trajet > 2 km — Commander un véhicule ?</div>
+      <div style="font-size:12px;color:#7a6a5a;margin-bottom:10px">Aucun transport en commun disponible à proximité pour ce trajet.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px">
+        <a href="https://www.uber.com/fr/fr/ride/?pickup=${depEncoded}&dropoff=${destEncoded}" target="_blank" rel="noopener noreferrer"
+           style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:#000;border-radius:8px;text-decoration:none">
+          <span style="font-size:20px">🚗</span>
+          <span style="font-size:11px;font-weight:700;color:#fff">Uber</span>
+        </a>
+        <a href="https://bolt.eu/fr-fr/ride/?pickup_lat=${coordDepart.lat}&pickup_lng=${coordDepart.lon}&destination_lat=${coordDest.lat}&destination_lng=${coordDest.lon}" target="_blank" rel="noopener noreferrer"
+           style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:#34d186;border-radius:8px;text-decoration:none">
+          <span style="font-size:20px">⚡</span>
+          <span style="font-size:11px;font-weight:700;color:#fff">Bolt</span>
+        </a>
+        <a href="tel:+33972707070" rel="noopener noreferrer"
+           style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:#1a237e;border-radius:8px;text-decoration:none">
+          <span style="font-size:20px">📞</span>
+          <span style="font-size:11px;font-weight:700;color:#fff">Taxis</span>
+        </a>
+      </div>
+    </div>`;
+  }
+
   document.getElementById("etapes").innerHTML=html;
   tracerCarte(iti.trace,iti.ligne?couleurLigne(iti.ligne):"#7a6a5a");
 }
