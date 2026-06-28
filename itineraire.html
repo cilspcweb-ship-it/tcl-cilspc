@@ -2302,12 +2302,20 @@ function dijkstraTCL(latDep,lonDep,latDest,lonDest,modesTCL,lignesExclues=new Se
   }
 
   // Chercher le meilleur nœud d'arrivée (< SEUIL_DEST de la destination)
+  // Anti-rebours : si l'arrêt est plus loin de la destination que le point de départ,
+  // on ajoute une pénalité proportionnelle à l'excès de distance
+  const dDepDest=dist(latDep,lonDep,latDest,lonDest);
   let meilleurId=null, meilleurPoids=Infinity;
   for(const n of nodeList){
     if(!dist_[n.id]) continue;
     const dFin=dist(latDest,lonDest,n.arret.lat,n.arret.lon);
     if(dFin>SEUIL_DEST) continue;
-    const total=dist_[n.id]+mToMin(dFin,V_MARCHE);
+    // Pénalité si l'arrêt d'arrivée est plus loin de la destination que le départ
+    // (trajet qui "dépasse" la destination et revient en arrière)
+    const dArretDest=dist(latDest,lonDest,n.arret.lat,n.arret.lon);
+    const dArretDep=dist(latDep,lonDep,n.arret.lat,n.arret.lon);
+    const penaliteRebours=dArretDep>dDepDest+500?mToMin(dArretDep-dDepDest,V_METRO)*2:0;
+    const total=dist_[n.id]+mToMin(dFin,V_MARCHE)+penaliteRebours;
     if(total<meilleurPoids){
       meilleurPoids=total;
       meilleurId=n.id;
@@ -2481,7 +2489,13 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
         const terminus=idxArr>idxDep?reseau[reseau.length-1].nom:reseau[0].nom;
         etapes.push({icone:"🚇",titre:`Ligne ${nomL} → direction ${terminus}`,detail:`De ${t.arretDep.nom} à ${t.arretArr.nom} — ~${t.dureeTCL} min`,duree:t.dureeTCL,ligne:t.cle,couleur});
         etapes.push({icone:"📍",titre:`Descendez à ${t.arretArr.nom}`,detail:"",duree:0,couleur});
-        trace.push([t.arretDep.lat,t.arretDep.lon],[t.arretArr.lat,t.arretArr.lon]);
+        // Trace réelle : tous les arrêts intermédiaires du tronçon
+        if(idxDep>=0&&idxArr>=0){
+          const iMin=Math.min(idxDep,idxArr), iMax=Math.max(idxDep,idxArr);
+          for(let k=iMin;k<=iMax;k++) trace.push([reseau[k].lat,reseau[k].lon]);
+        }else{
+          trace.push([t.arretDep.lat,t.arretDep.lon],[t.arretArr.lat,t.arretArr.lon]);
+        }
         labelLignes.push(nomL);
       }else if(t.type==="transfert"){
         const prochainTCL=troncons.find((x,idx)=>idx>troncons.indexOf(t)&&x.type==="tcl");
@@ -2576,32 +2590,40 @@ async function chercher(){
           if(resp.ok){
             const data=await resp.json();
             const passages=data.passages||{};
+            const nbPassages=Object.keys(passages).length;
             // Recalculer la durée de chaque option TCL avec la vraie attente
             for(const opt of optionsTCL){
-              let dureeAjustee=opt.duree;
               let deltaTotal=0;
+              let matchsTrouves=0;
               for(const t of (opt._troncons||[])){
                 if(t.type!=="tcl"||!t.arretDep) continue;
                 const ids=ARRETS_IDS[t.arretDep.nom]||[];
                 const nomLigne=nomLignePropre(t.cle);
-                // Chercher le prochain passage de cette ligne sur un des IDs de l'arrêt
                 let meilleureAttente=null;
                 for(const id of ids){
-                  const passagesArret=passages[id]||[];
-                  const match=passagesArret.find(p=>p.ligne===nomLigne||p.ligne===nomLigne.toUpperCase());
+                  const passagesArret=passages[String(id)]||passages[id]||[];
+                  // Matching souple : "A" = "A", "T2" = "T2", ignorer casse et espaces
+                  const match=passagesArret.find(p=>{
+                    const pl=String(p.ligne||"").trim().toUpperCase();
+                    const nl=nomLigne.toUpperCase();
+                    return pl===nl||pl.replace(/\s/g,"")===nl.replace(/\s/g,"");
+                  });
                   if(match&&(meilleureAttente===null||match.delai<meilleureAttente)){
                     meilleureAttente=match.delai;
+                    matchsTrouves++;
                   }
                 }
                 if(meilleureAttente!==null){
-                  // Remplacer ATTENTE_TCL=3 par la vraie attente
                   const delta=meilleureAttente-ATTENTE_TCL;
                   deltaTotal+=delta;
                 }
               }
-              if(deltaTotal!==0){
-                opt.duree=Math.max(1,opt.duree+deltaTotal);
-                opt._score=opt._score?opt._score+deltaTotal:opt.duree;
+              // Activer temps réel si : au moins un passage trouvé pour cette option
+              if(matchsTrouves>0){
+                if(deltaTotal!==0){
+                  opt.duree=Math.max(1,opt.duree+deltaTotal);
+                  opt._score=opt._score?opt._score+deltaTotal:opt.duree;
+                }
                 opt._tempsReel=true;
               }
             }

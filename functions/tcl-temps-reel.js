@@ -44,10 +44,26 @@ export async function onRequest(context) {
       const ligne = String(v.ligne || "").trim().toUpperCase();
       if (!ligne) continue;
 
-      const delaiStr = String(v.delaipassage || "0");
+      const delaiStr = String(v.delaipassage || "0").trim();
       let delai;
-      if (delaiStr === "Proche" || delaiStr === "proche") delai = 0;
-      else delai = Math.max(0, parseInt(delaiStr, 10) || 0);
+      if (delaiStr === "Proche" || delaiStr === "proche" || delaiStr === "A quai" || delaiStr === "0") {
+        delai = 0;
+      } else {
+        // Gérer "41 min", "4h54", "41", etc.
+        const parsed = parseInt(delaiStr, 10);
+        if (!isNaN(parsed)) {
+          // Si le format contient "h" c'est en heures → convertir
+          if (delaiStr.toLowerCase().includes("h") && !delaiStr.toLowerCase().startsWith(parsed + " ")) {
+            delai = parsed * 60 + (parseInt(delaiStr.split(/h/i)[1]) || 0);
+          } else {
+            delai = parsed;
+          }
+        } else {
+          continue; // format inconnu, ignorer
+        }
+      }
+      // Ignorer les passages trop lointains (> 90 min = probablement service de nuit suivant)
+      if (delai > 90) continue;
 
       const direction = String(v.direction || "").trim();
 
