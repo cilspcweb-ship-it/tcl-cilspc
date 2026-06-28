@@ -2679,9 +2679,13 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
     if(passe>0 && options.length>1 && opt.duree > options[1].duree+10) break;
   }
 
-  // Éliminer les options TCL qui sont plus lentes que la marche directe
-  const dureeMarche2=Math.round(mToMin(dDirecte,V_MARCHE));
-  const optionsFiltrees=options.filter(o=>o.type!=="tcl"||o.duree<dureeMarche2);
+  // Éliminer les options TCL qui ne font gagner que peu de temps vs la marche directe
+  // Seuil : gain minimal de 8 minutes pour justifier une option TCL
+  const GAIN_MIN_TCL=8;
+  const optionsFiltrees=options.filter(o=>{
+    if(o.type!=="tcl") return true;
+    return o.duree<dureeMarche2-GAIN_MIN_TCL;
+  });
 
   // Trier : les options TCL utilisent leur scorePondere (favorise métro > tram > bus)
   // La marche reste triée par durée réelle
