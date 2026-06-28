@@ -255,95 +255,72 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
 <div id="panel-aide" class="panel">
   <div style="padding:14px 16px 0">
     <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--bordeaux);margin-bottom:4px">Comment utiliser l'itinéraire ?</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Guide complet en 5 étapes</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Guide complet</div>
   </div>
 
   <div class="tuto-section">
     <div class="tuto-titre">1️⃣ Votre position</div>
     <div class="tuto-texte">
-      Au chargement, votre position est détectée automatiquement. Si ce n'est pas le cas, tapez votre adresse dans le champ <strong>Votre position</strong> et choisissez une suggestion.<br><br>
-      Vous pouvez aussi <strong>cliquer sur la carte</strong> pour définir votre point de départ ou destination directement.
+      Au chargement, votre position est détectée automatiquement (📡). Si elle est bloquée, un bouton <strong>Réessayer la géolocalisation</strong> apparaît.<br><br>
+      Vous pouvez aussi taper une adresse dans le champ ou <strong>cliquer sur la carte</strong> pour définir votre départ manuellement.
     </div>
   </div>
 
   <div class="tuto-section">
     <div class="tuto-titre">2️⃣ La destination</div>
     <div class="tuto-texte">
-      Tapez l'adresse ou le nom du lieu dans <strong>Destination</strong>. Une liste de suggestions apparaît avec la rue et la ville — sélectionnez la bonne.<br><br>
-      Vous pouvez aussi <strong>cliquer directement sur la carte</strong> pour définir la destination.
+      Tapez l'adresse ou le nom du lieu — les suggestions incluent la rue <strong>et la ville</strong>. Vous pouvez aussi cliquer directement sur la carte.
     </div>
-    <div class="tuto-note">💡 La recherche est centrée sur Lyon et la Métropole automatiquement</div>
+    <div class="tuto-note">🕐 Vos <strong>5 derniers trajets</strong> apparaissent sous la destination pour les relancer en un tap.</div>
   </div>
 
   <div class="tuto-section">
     <div class="tuto-titre">3️⃣ La priorité</div>
-    <div class="tuto-texte">Choisissez ce qui compte le plus pour vous :</div>
-    <br>
-    <div class="tuto-etape">
-      <div class="tuto-num">A</div>
-      <div class="tuto-content"><span class="tuto-chip bordeaux">⚡ Le plus rapide</span> — minimise le temps total, tous modes combinés. L'algorithme Dijkstra explore l'ensemble du réseau et trouve les meilleures correspondances automatiquement.</div>
-    </div>
-    <div class="tuto-etape">
-      <div class="tuto-num">B</div>
-      <div class="tuto-content"><span class="tuto-chip outline">🚶 À pied</span> — itinéraire piéton direct, avec Vélo'v ou Dott si disponibles et plus rapides</div>
-    </div>
-    <div class="tuto-etape">
-      <div class="tuto-num">C</div>
-      <div class="tuto-content"><span class="tuto-chip grey">🪑 Peu marcher</span> — favorise les arrêts proches (max 400 m d'accès, max 200 m de marche finale) pour minimiser la marche totale</div>
-    </div>
+    <div class="tuto-etape"><div class="tuto-num">A</div><div class="tuto-content"><span class="tuto-chip bordeaux">⚡ Le plus rapide</span> — minimise le temps total tous modes combinés. Dijkstra explore 119 lignes et trouve les correspondances automatiquement.</div></div>
+    <div class="tuto-etape"><div class="tuto-num">B</div><div class="tuto-content"><span class="tuto-chip outline">🚶 À pied</span> — piéton direct, avec Vélo'v ou Dott si disponibles et plus rapides.</div></div>
+    <div class="tuto-etape"><div class="tuto-num">C</div><div class="tuto-content"><span class="tuto-chip grey">🪑 Peu marcher</span> — max 400 m d'accès à l'arrêt, max 200 m de marche finale.</div></div>
   </div>
 
   <div class="tuto-section">
     <div class="tuto-titre">4️⃣ Le profil de transport</div>
-    <div class="tuto-texte">Choisissez un profil d'un seul clic. Le profil actif est encadré en rouge.</div>
+    <div class="tuto-texte">6 profils en grille — le profil actif est encadré en rouge :</div>
     <br>
-    <div class="tuto-etape">
-      <div class="tuto-num" style="background:var(--bordeaux)">🗺️</div>
-      <div class="tuto-content"><strong>Multimodal</strong> — combine TCL, Vélo'v et Dott pour le trajet le plus rapide. C'est le profil par défaut recommandé.</div>
-    </div>
-    <div class="tuto-etape">
-      <div class="tuto-num" style="background:#e05c00">🚇</div>
-      <div class="tuto-content"><strong>Métro/Tram</strong> — métro (A, B, C, D) et tramways (T1 à T7) uniquement. Idéal pour les trajets sur les grands axes.</div>
-    </div>
-    <div class="tuto-etape">
-      <div class="tuto-num" style="background:#c0392b">🚌</div>
-      <div class="tuto-content"><strong>Bus</strong> — lignes Chrono (C1–C26) et bus réguliers (lignes 2, 3, 6, 12, 62, 72...). Couvre toute la métropole y compris les zones non desservies par le métro.</div>
-    </div>
-    <div class="tuto-etape">
-      <div class="tuto-num" style="background:#e8b400">🚲</div>
-      <div class="tuto-content"><strong>Vélo'v</strong> — trajet en vélo en libre-service uniquement. Disponibilité vérifiée en temps réel.</div>
-    </div>
-    <div class="tuto-etape">
-      <div class="tuto-num" style="background:#00b4d8">🛴</div>
-      <div class="tuto-content"><strong>Dott</strong> — trottinette électrique uniquement. Dépôt obligatoire dans un emplacement réservé Dott à destination.</div>
-    </div>
-    <div class="tuto-etape">
-      <div class="tuto-num" style="background:#666">⚙️</div>
-      <div class="tuto-content"><strong>Personnalisé</strong> — affiche 4 toggles pour activer/désactiver chaque mode librement et créer votre propre combinaison.</div>
-    </div>
-    <div class="tuto-note">💡 <strong>Correspondances automatiques :</strong> l'algorithme explore plus de 100 lignes TCL et trouve les correspondances optimales sans liste prédéfinie — jusqu'à 3 lignes enchaînées.</div>
-    <div class="tuto-note" style="margin-top:6px">⚠️ En profil Multimodal, Vélo'v et Dott sont proposés en accès à l'arrêt si la distance dépasse 600 m et si cela fait gagner au moins 3 minutes. Jamais en fin de trajet sauf si la marche finale dépasse 400 m et qu'un véhicule est disponible à moins de 150 m de l'arrêt de descente.</div>
+    <div class="tuto-etape"><div class="tuto-num" style="background:var(--bordeaux)">🗺️</div><div class="tuto-content"><strong>Multimodal</strong> — combine TCL, Vélo'v et Dott. Profil par défaut recommandé.</div></div>
+    <div class="tuto-etape"><div class="tuto-num" style="background:#e05c00">🚇</div><div class="tuto-content"><strong>Métro/Tram</strong> — métro A B C D et tramways T1 à T7 uniquement.</div></div>
+    <div class="tuto-etape"><div class="tuto-num" style="background:#c0392b">🚌</div><div class="tuto-content"><strong>Bus</strong> — Chrono C1–C26 et bus réguliers (lignes 2, 3, 6, 12, 62, 72…). Couvre toute la Métropole.</div></div>
+    <div class="tuto-etape"><div class="tuto-num" style="background:#e8b400">🚲</div><div class="tuto-content"><strong>Vélo'v</strong> — vélo en libre-service uniquement. Disponibilité en temps réel.</div></div>
+    <div class="tuto-etape"><div class="tuto-num" style="background:#00b4d8">🛴</div><div class="tuto-content"><strong>Dott</strong> — trottinette uniquement. Dépôt obligatoire dans un emplacement Dott.</div></div>
+    <div class="tuto-etape"><div class="tuto-num" style="background:#666">⚙️</div><div class="tuto-content"><strong>Personnalisé</strong> — 4 toggles pour combiner les modes librement.</div></div>
+    <div class="tuto-note">💡 Correspondances automatiques jusqu'à 3 lignes enchaînées, sans liste prédéfinie.</div>
+    <div class="tuto-note" style="margin-top:6px">⚠️ Vélo'v/Dott proposés en accès si distance > 600 m et gain ≥ 3 min. En fin de trajet si marche finale > 400 m et véhicule à moins de 150 m.</div>
   </div>
 
   <div class="tuto-section">
     <div class="tuto-titre">5️⃣ Les résultats</div>
     <div class="tuto-texte">
-      Après avoir cliqué sur <span class="tuto-chip bordeaux">Trouver mon itinéraire →</span>, jusqu'à 3 options apparaissent classées par durée :<br><br>
-      — Cliquez sur une option pour voir le détail des étapes<br>
-      — Chaque étape a un bouton <strong>📱 Guider vers ce point</strong> qui ouvre Google Maps<br>
-      — La carte affiche le trajet réel arrêt par arrêt (pas en ligne droite)<br>
-      — La marche finale depuis le dernier arrêt est garantie ≤ 600 m
+      Jusqu'à 3 options classées par durée. Cliquez pour voir le détail :<br><br>
+      — <strong>Heure de départ → heure d'arrivée estimée</strong> affichées dans le résumé<br>
+      — Chaque étape a un bouton <strong>📱 Guider vers ce point</strong> (Google Maps, mode vélo pour Vélo'v et Dott)<br>
+      — La carte trace le trajet réel arrêt par arrêt<br>
+      — Si aucun transport disponible et distance > 2 km : liens <strong>Uber, Bolt et Taxis</strong> proposés automatiquement
     </div>
-    <div class="tuto-note">💡 Si le badge <span style="background:#2e8b3a;color:#fff;padding:1px 6px;border-radius:10px;font-size:11px">⏱ Temps réel</span> apparaît, les durées d'attente TCL sont basées sur les vrais passages en direct via l'API Grand Lyon.</div>
+    <div class="tuto-note">💡 Badge <span style="background:#2e8b3a;color:#fff;padding:1px 6px;border-radius:10px;font-size:11px">⏱ Temps réel</span> = durées d'attente TCL basées sur les vrais passages Grand Lyon.</div>
+  </div>
+
+  <div class="tuto-section">
+    <div class="tuto-titre">6️⃣ Boutons supplémentaires</div>
+    <div class="tuto-etape"><div class="tuto-num" style="background:#666">♿</div><div class="tuto-content"><strong>PMR</strong> — filtre les arrêts accessibles aux personnes à mobilité réduite (ascenseur). Cliquez pour activer, le bouton devient rouge.</div></div>
+    <div class="tuto-etape"><div class="tuto-num" style="background:var(--bordeaux)">↗️</div><div class="tuto-content"><strong>Partager</strong> — partage l'itinéraire par WhatsApp, SMS ou copie le lien. Disponible après calcul d'un trajet.</div></div>
+    <div class="tuto-note">⏰ Un message s'affiche automatiquement si le service TCL est fermé (avant 5h ou après 00h30) ou en service de nuit (lignes N80–N84).</div>
   </div>
 
   <div class="tuto-section">
     <div class="tuto-titre">🔄 Données en temps réel</div>
     <div class="tuto-texte">
-      Les disponibilités <strong>Vélo'v</strong> et <strong>Dott</strong> sont récupérées en direct à chaque calcul.<br><br>
-      Les <strong>prochains passages TCL</strong> sont consultés via l'API Grand Lyon pour affiner les durées d'attente — si disponibles, ils remplacent l'attente forfaitaire de 3 minutes.
+      Vélo'v et Dott : disponibilité récupérée en direct à chaque calcul.<br>
+      Passages TCL : API Grand Lyon pour affiner les attentes — remplace l'attente forfaitaire de 3 min si disponible.<br>
+      GTFS : <strong>119 lignes TCL</strong> (métro, tram, 26 Chrono, 64 bus) — données additionnelles chargées dynamiquement.
     </div>
-    <div class="tuto-note">💡 L'algorithme est un <strong>Dijkstra sur graphe TCL</strong> couvrant <strong>119 lignes</strong> (métro, tram, 26 Chrono, 64 bus réguliers) et plus de 3 000 nœuds. Les données GTFS des 64 lignes additionnelles sont chargées dynamiquement depuis un fichier externe pour garder la page légère.</div>
   </div>
 </div><!-- fin panel-aide -->
 
