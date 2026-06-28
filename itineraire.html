@@ -1741,12 +1741,7 @@ const RESEAU_C_A=[
   {nom:"Hénon",lat:45.77925,lon:4.82744},
   {nom:"Cuire",lat:45.78526,lon:4.8325}
 ];
-const RESEAU_C_R=[
-  {nom:"Hénon",lat:45.77928,lon:4.8276},
-  {nom:"Croix-Rousse",lat:45.77446,lon:4.83183},
-  {nom:"Croix-Paquet",lat:45.77097,lon:4.83631},
-  {nom:"Hôtel de Ville L. Pradel",lat:45.76814,lon:4.83595}
-];
+const RESEAU_C_R=[{nom:"Croix-Paquet",lat:45.77097,lon:4.83631},{nom:"Hôtel de Ville L. Pradel",lat:45.76814,lon:4.83595},{nom:"Hénon",lat:45.77928,lon:4.8276},{nom:"Cuire",lat:45.78526,lon:4.8325},{nom:"Croix-Rousse",lat:45.77446,lon:4.83183}];
 const RESEAU_D_A=[{nom:"Gare de Vénissieux",lat:45.70557,lon:4.88808},{nom:"Parilly",lat:45.71978,lon:4.8875},{nom:"Mermoz - Pinel",lat:45.73047,lon:4.88729},{nom:"Laennec",lat:45.73872,lon:4.88634},{nom:"Grange Blanche",lat:45.74295,lon:4.87899},{nom:"Monplaisir Lumière",lat:45.74539,lon:4.87187},{nom:"Sans Souci",lat:45.74778,lon:4.86489},{nom:"Garibaldi",lat:45.75147,lon:4.85421},{nom:"Saxe - Gambetta",lat:45.75389,lon:4.84715},{nom:"Guillotière Gabriel Péri",lat:45.75547,lon:4.84257},{nom:"Bellecour",lat:45.75658,lon:4.83376},{nom:"Vieux Lyon Cat. St-Jean",lat:45.76013,lon:4.82654},{nom:"Gorge de Loup",lat:45.76643,lon:4.80555},{nom:"Valmy",lat:45.77479,lon:4.80553},{nom:"Gare de Vaise-G.Collomb",lat:45.77979,lon:4.80385}];
 const RESEAU_D_R=[{nom:"Gare de Vaise-G.Collomb",lat:45.7798,lon:4.80374},{nom:"Valmy",lat:45.77477,lon:4.80533},{nom:"Gorge de Loup",lat:45.76643,lon:4.80544},{nom:"Vieux Lyon Cat. St-Jean",lat:45.76006,lon:4.82649},{nom:"Bellecour",lat:45.75672,lon:4.83383},{nom:"Guillotière Gabriel Péri",lat:45.75541,lon:4.84253},{nom:"Saxe - Gambetta",lat:45.75383,lon:4.84713},{nom:"Garibaldi",lat:45.75139,lon:4.85421},{nom:"Sans Souci",lat:45.74775,lon:4.86476},{nom:"Monplaisir Lumière",lat:45.74533,lon:4.87179},{nom:"Grange Blanche",lat:45.74283,lon:4.8789},{nom:"Laennec",lat:45.73867,lon:4.88626},{nom:"Mermoz - Pinel",lat:45.7305,lon:4.88721},{nom:"Parilly",lat:45.71975,lon:4.88741},{nom:"Gare de Vénissieux",lat:45.7056,lon:4.88796}];
 const RESEAU_T1_A=[{nom:"Debourg",lat:45.731189792061,lon:4.834616339392},{nom:"ENS Lyon",lat:45.731462441908,lon:4.828847141001},{nom:"Halle Tony Garnier",lat:45.731723881009,lon:4.82287984032},{nom:"Musée des Confluences",lat:45.733665486632,lon:4.818912774513},{nom:"Hôtel Région Montrochet",lat:45.740590337622,lon:4.819096334937},{nom:"Sainte-Blandine",lat:45.744188681502,lon:4.822145229881},{nom:"Place des Archives",lat:45.747063607189,lon:4.824597656987},{nom:"Perrache",lat:45.749567419463,lon:4.827112617066},{nom:"Quai Claude Bernard",lat:45.749617694782,lon:4.835304876608},{nom:"Rue de l'Université",lat:45.751123284685,lon:4.83896016637},{nom:"Saint-André",lat:45.752885942222,lon:4.841081951243},{nom:"Guillotière Gabriel Péri",lat:45.754902397972,lon:4.84254653226},{nom:"Liberté",lat:45.758865571055,lon:4.84248582279},{nom:"Saxe - Préfecture",lat:45.760086942032,lon:4.845187113321},{nom:"Palais Justice Mairie 3e",lat:45.76031001943,lon:4.848463314899},{nom:"Part-Dieu Auditorium",lat:45.76065564564,lon:4.853826157655},{nom:"Gare Part-Dieu V.Merle",lat:45.761738959473,lon:4.857910001199},{nom:"Thiers - Lafayette",lat:45.764331873062,lon:4.862076181498},{nom:"Collège Bellecombe",lat:45.766664120482,lon:4.861968223097},{nom:"Charpennes Charles Hernu",lat:45.77086410861,lon:4.863070704671},{nom:"Charpennes Charles Hernu",lat:45.770885978321,lon:4.863714960871},{nom:"Le Tonkin",lat:45.774051790769,lon:4.864049522242},{nom:"Chorel",lat:45.774908913921,lon:4.864928765504},{nom:"Condorcet",lat:45.77792176771,lon:4.866947119035},{nom:"Condorcet",lat:45.778838548065,lon:4.86710341027},{nom:"Université Lyon 1",lat:45.780841780619,lon:4.866309339229},{nom:"La Doua - Gaston Berger",lat:45.781489172322,lon:4.87206557739},{nom:"La Doua",lat:45.778919863552,lon:4.871879833476},{nom:"INSA - Einstein",lat:45.782338994058,lon:4.87791687359},{nom:"Croix-Luizet",lat:45.783627066038,lon:4.883144874335},{nom:"IUT Feyssine",lat:45.78689106079,lon:4.881982140462}];
@@ -2322,19 +2317,7 @@ function setupAutocomplete(inputId,sugId,onSelect){
         const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q+" Lyon")}&format=json&limit=5&countrycodes=fr`);
         const data=await res.json();
         if(!data.length){sug.style.display="none";return;}
-        // Extraire une adresse lisible depuis le display_name Nominatim
-        // Format Nominatim : "numéro, rue, quartier, ville, département, région, pays"
-        function formatAdresse(display_name){
-          const parts=display_name.split(",").map(s=>s.trim()).filter(Boolean);
-          if(parts.length<=2) return parts.join(", ");
-          // Chercher la ville (commune = souvent 3e ou 4e segment, commence par majuscule)
-          // Mots à ignorer : codes postaux, numéros, "France", régions longues
-          const ignorer=["France","Métropole de Lyon","Auvergne-Rhône-Alpes","Rhône"];
-          const ville=parts.find((p,i)=>i>=2&&/^[A-ZÉÀÈÊ]/.test(p)&&!ignorer.includes(p)&&!/^\d/.test(p));
-          // Construire : rue + ville
-          const rue=parts.slice(0,2).join(", ");
-          return ville?rue+",  "+ville:parts.slice(0,3).join(", ");
-        }
+        // formatAdresse est globale — définie dans le scope principal
         sug.innerHTML=data.map(d=>`<div class="suggestion-item" data-lat="${d.lat}" data-lon="${d.lon}" data-nom="${d.display_name}">${formatAdresse(d.display_name)}</div>`).join("");
         sug.style.display="block";
         sug.querySelectorAll(".suggestion-item").forEach(el=>{
@@ -2349,6 +2332,16 @@ function setupAutocomplete(inputId,sugId,onSelect){
     },400);
   });
   document.addEventListener("click",e=>{if(!sug.contains(e.target)&&e.target!==input)sug.style.display="none";});
+}
+
+// Extraire une adresse lisible depuis le display_name Nominatim (globale)
+function formatAdresse(display_name){
+  const parts=display_name.split(",").map(s=>s.trim()).filter(Boolean);
+  if(parts.length<=2) return parts.join(", ");
+  const ignorer=["France","Métropole de Lyon","Auvergne-Rhône-Alpes","Rhône"];
+  const ville=parts.find((p,i)=>i>=2&&/^[A-ZÉÀÈÊ]/.test(p)&&!ignorer.includes(p)&&!/^\d/.test(p));
+  const rue=parts.slice(0,2).join(", ");
+  return ville?rue+",  "+ville:parts.slice(0,3).join(", ");
 }
 
 async function reverseGeocode(lat,lon){
@@ -2926,7 +2919,10 @@ async function chercher(){
   document.getElementById("etapes").innerHTML="";
   routeLayer.clearLayers();
   try{
-    const[velov,dott,dottStations]=await Promise.all([modes.velov?getVelov():Promise.resolve([]),modes.dott?getDott():Promise.resolve([]),modes.dott?getDottStations():Promise.resolve([])]);
+    // En mode PMR : pas de Vélov ni Dott (inaccessibles en fauteuil roulant)
+    const velovActif=modes.velov&&!modePMR;
+    const dottActif=modes.dott&&!modePMR;
+    const[velov,dott,dottStations]=await Promise.all([velovActif?getVelov():Promise.resolve([]),dottActif?getDott():Promise.resolve([]),dottActif?getDottStations():Promise.resolve([])]);
     const options=await calculerItineraires(coordDepart.lat,coordDepart.lon,coordDest.lat,coordDest.lon,velov,dott,dottStations);
     if(priorite==="marche"){afficherItineraire(options.find(o=>o.type==="marche")||options[0]);hideEtat();return;}
 
@@ -3072,9 +3068,14 @@ function afficherHistorique(){
   if(!hist.length){zone.style.display="none";return;}
   zone.style.display="block";
   zone.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">🕐 Trajets récents</div>`+
-    hist.map((h,i)=>`<button onclick="relancerHistorique(${i})" style="display:block;width:100%;text-align:left;padding:6px 10px;margin-bottom:4px;background:var(--blanc);border:1px solid var(--border);border-radius:7px;font-family:'Outfit',sans-serif;font-size:12px;color:var(--texte);cursor:pointer">
-      <span style="color:var(--bordeaux)">→</span> <strong>${h.dep.split(',')[0]}</strong> → ${h.dest.split(',')[0]}
-    </button>`).join("")+
+    hist.map((h,i)=>{
+      // Extraire une version courte lisible — prendre jusqu'à la 2e virgule (rue + ville)
+      const nomDepCourt=h.dep.replace("📍 ","").split(",").slice(0,2).join(",").trim().slice(0,35)||h.dep.slice(0,35);
+      const nomDestCourt=h.dest.split(",").slice(0,2).join(",").trim().slice(0,35)||h.dest.slice(0,35);
+      return `<button onclick="relancerHistorique(${i})" style="display:block;width:100%;text-align:left;padding:6px 10px;margin-bottom:4px;background:var(--blanc);border:1px solid var(--border);border-radius:7px;font-family:'Outfit',sans-serif;font-size:12px;color:var(--texte);cursor:pointer">
+        <span style="color:var(--bordeaux)">→</span> <strong>${nomDepCourt}</strong> → ${nomDestCourt}
+      </button>`;
+    }).join("")+
     `<button onclick="effacerHistorique()" style="font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 0;text-decoration:underline">Effacer l'historique</button>`;
 }
 
@@ -3229,9 +3230,13 @@ function afficherItineraire(iti){
     html+=`<div class="etape"><div class="etape-icone" style="background:${e.couleur}22">${e.icone}</div><div class="etape-corps"><div class="etape-titre">${bdg}${e.titre}</div>${e.detail?`<div class="etape-detail">${e.detail}</div>`:""}${dispo}${maps}</div>${dur?`<div class="etape-duree">${dur}</div>`:""}</div>`;
   });
 
-  // Bloc taxi/VTC si marche > 2km et seul transport disponible est la marche
-  const seuloptions=itinerairesCalcules.filter(o=>o.type!=="marche");
-  if(dDirecteM>2000&&seuloptions.length===0){
+  // Bloc taxi/VTC uniquement si :
+  // 1. Distance > 2km
+  // 2. Aucune option TCL (pas de tronçon transport en commun)
+  // 3. L'option affichée ne contient pas de Dott ni Vélov (icônes 🛴 ou 🚲)
+  const aucunTCL=itinerairesCalcules.every(o=>o.type!=="tcl");
+  const aucunMotorise=!iti.etapes.some(e=>e.icone==="🛴"||e.icone==="🚲");
+  if(dDirecteM>2000&&aucunTCL&&aucunMotorise){
     const destEncoded=encodeURIComponent(`${coordDest.lat},${coordDest.lon}`);
     const depEncoded=encodeURIComponent(`${coordDepart.lat},${coordDepart.lon}`);
     html+=`
