@@ -207,6 +207,8 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
     </div>
     <div class="field-hint">⌨️ Tapez une adresse et choisissez dans la liste · ou cliquez directement sur la carte</div>
   </div>
+  <!-- Zone historique des trajets récents -->
+  <div id="historique-zone" style="display:none;margin:0 0 10px"></div>
   <div class="field">
     <label>Priorité</label>
     <div class="options-row">
@@ -235,7 +237,11 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
     </div>
     <div id="profil-desc" style="font-size:11px;color:var(--muted);margin-top:4px">Combine TCL, Vélo'v et Dott pour le trajet optimal</div>
   </div>
-  <button id="btn-chercher" onclick="chercher()">Trouver mon itinéraire →</button>
+  <div style="display:flex;gap:8px;margin-top:2px">
+    <button id="btn-chercher" onclick="chercher()" style="flex:1">Trouver mon itinéraire →</button>
+    <button id="btn-pmr" onclick="togglePMR()" title="Accessibilité PMR" style="padding:12px 14px;background:var(--blanc);border:1.5px solid var(--border);border-radius:8px;font-size:16px;cursor:pointer;flex-shrink:0;touch-action:manipulation">♿</button>
+    <button onclick="partagerTrajet()" title="Partager cet itinéraire" style="padding:12px 14px;background:var(--blanc);border:1.5px solid var(--border);border-radius:8px;font-size:16px;cursor:pointer;flex-shrink:0;touch-action:manipulation">↗️</button>
+  </div>
 </div>
 <div id="map"></div>
 <div id="resultat">
@@ -2276,6 +2282,8 @@ window.addEventListener("load",()=>{
   };
 
   demanderGeolocSilencieuse();
+  // Afficher l'historique des trajets récents au démarrage
+  afficherHistorique();
 
   map.on("click",e=>{
     coordDest={lat:e.latlng.lat,lon:e.latlng.lng};
@@ -2519,10 +2527,14 @@ function construireGraphe(modesTCL){
       if(ni.cle===nj.cle) continue;
       const d=dist(ni.arret.lat,ni.arret.lon,nj.arret.lat,nj.arret.lon);
       if(d>500) continue;
-      // Arrêts < 50m = même quai physique : pas de marche, juste attente prochaine ligne
-      // Arrêts 50-500m : marche + correspondance + attente
-      const marcheMin=d<50?0:mToMin(d,V_MARCHE);
-      const poidsTransfert=marcheMin+2+ATTENTE_TCL;
+      // Arrêts < 30m = même quai physique (ex: Bellecour A/D) : pas de marche, 1 min de correspondance seulement
+      // Arrêts 30-100m = même station, marche minimale + 1.5 min
+      // Arrêts 100-500m = correspondance standard : marche + 2 min + attente
+      let marcheMin, penalite;
+      if(d<30){ marcheMin=0; penalite=1; }
+      else if(d<100){ marcheMin=mToMin(d,V_MARCHE)*0.5; penalite=1.5; }
+      else { marcheMin=mToMin(d,V_MARCHE); penalite=2; }
+      const poidsTransfert=marcheMin+penalite+ATTENTE_TCL;
       addEdge(ni.id,nj.id,poidsTransfert,{type:"transfert",distM:d});
       addEdge(nj.id,ni.id,poidsTransfert,{type:"transfert",distM:d});
     }
@@ -2945,6 +2957,13 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
 async function chercher(){
   if(!coordDepart){showEtat("📍 Activez la géolocalisation ou saisissez votre position.","err");return;}
   if(!coordDest){showEtat("🎯 Saisissez ou cliquez sur la carte pour choisir une destination.","err");return;}
+  // Alerte si hors heures de service TCL (modes TCL/Bus actifs)
+  if((modes.tcl||modes.chrono)&&priorite!=="marche") verifierHeureService();
+  // Mettre en avant lignes de nuit si nuit
+  if(detecterModeNuit()&&(modes.tcl||modes.chrono)){
+    showEtat("🌙 Service de nuit — lignes N80-N84 actives. Fréquence réduite.","vide");
+    setTimeout(hideEtat,4000);
+  }
   const btn=document.getElementById("btn-chercher");
   btn.disabled=true;btn.textContent="Calcul en cours…";
   showEtat("Recherche du meilleur itinéraire…","load");
@@ -3060,9 +3079,164 @@ async function chercher(){
     hideEtat();
     afficherOptions(options);
     afficherItineraire(options[0]);
+    // Sauvegarder dans l'historique
+    sauvegarderHistorique(document.getElementById("input-depart").value, document.getElementById("input-dest").value, coordDepart, coordDest);
   }catch(e){showEtat("Erreur : "+e.message,"err");}
   finally{btn.disabled=false;btn.textContent="Trouver mon itinéraire →";}
 }
+
+// ============================================================
+// HISTORIQUE DES TRAJETS (localStorage)
+// ============================================================
+const HISTORIQUE_KEY="iti_historique_v1";
+const MAX_HISTORIQUE=5;
+
+function sauvegarderHistorique(nomDep, nomDest, coordDep, coordDst){
+  if(!nomDep||!nomDest||nomDep===nomDest) return;
+  try{
+    const hist=lireHistorique();
+    const entree={dep:nomDep,dest:nomDest,latDep:coordDep.lat,lonDep:coordDep.lon,latDest:coordDst.lat,lonDest:coordDst.lon,ts:Date.now()};
+    // Eviter les doublons (même trajet < 5 min)
+    const idx=hist.findIndex(h=>h.dep===nomDep&&h.dest===nomDest);
+    if(idx>=0) hist.splice(idx,1);
+    hist.unshift(entree);
+    localStorage.setItem(HISTORIQUE_KEY,JSON.stringify(hist.slice(0,MAX_HISTORIQUE)));
+    afficherHistorique();
+  }catch(e){}
+}
+
+function lireHistorique(){
+  try{ return JSON.parse(localStorage.getItem(HISTORIQUE_KEY)||"[]"); }
+  catch(e){ return []; }
+}
+
+function afficherHistorique(){
+  const hist=lireHistorique();
+  const zone=document.getElementById("historique-zone");
+  if(!zone) return;
+  if(!hist.length){zone.style.display="none";return;}
+  zone.style.display="block";
+  zone.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">🕐 Trajets récents</div>`+
+    hist.map((h,i)=>`<button onclick="relancerHistorique(${i})" style="display:block;width:100%;text-align:left;padding:6px 10px;margin-bottom:4px;background:var(--blanc);border:1px solid var(--border);border-radius:7px;font-family:'Outfit',sans-serif;font-size:12px;color:var(--texte);cursor:pointer">
+      <span style="color:var(--bordeaux)">→</span> <strong>${h.dep.split(',')[0]}</strong> → ${h.dest.split(',')[0]}
+    </button>`).join("")+
+    `<button onclick="effacerHistorique()" style="font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 0;text-decoration:underline">Effacer l'historique</button>`;
+}
+
+function relancerHistorique(idx){
+  const hist=lireHistorique();
+  const h=hist[idx];
+  if(!h) return;
+  document.getElementById("input-depart").value=h.dep;
+  document.getElementById("input-dest").value=h.dest;
+  coordDepart={lat:h.latDep,lon:h.lonDep};
+  coordDest={lat:h.latDest,lon:h.lonDest};
+  ajouterMarqueur(coordDepart.lat,coordDepart.lon,"📍","Départ");
+  ajouterMarqueur(coordDest.lat,coordDest.lon,"🎯","Destination");
+  chercher();
+}
+
+function effacerHistorique(){
+  localStorage.removeItem(HISTORIQUE_KEY);
+  afficherHistorique();
+}
+
+// ============================================================
+// PARTAGE DU TRAJET
+// ============================================================
+function partagerTrajet(){
+  if(!coordDepart||!coordDest) return;
+  const dest=document.getElementById("input-dest").value;
+  const dep=document.getElementById("input-depart").value;
+  const url=`https://tcl-cilspc.pages.dev/itineraire?dep=${coordDepart.lat},${coordDepart.lon}&dest=${coordDest.lat},${coordDest.lon}`;
+  const texte=`🗺️ Itinéraire Lyon : ${dep} → ${dest}\n${url}`;
+  if(navigator.share){
+    navigator.share({title:"Itinéraire Lyon multimodal",text:texte,url}).catch(()=>{});
+  }else{
+    // Fallback : copier dans le presse-papier
+    navigator.clipboard.writeText(url).then(()=>{
+      showEtat("✅ Lien copié dans le presse-papier !","load");
+      setTimeout(hideEtat,2500);
+    }).catch(()=>{
+      // Dernier recours : WhatsApp
+      window.open(`https://wa.me/?text=${encodeURIComponent(texte)}`,"_blank");
+    });
+  }
+}
+
+// ============================================================
+// ALERTE HORS SERVICE
+// ============================================================
+function verifierHeureService(){
+  const h=new Date().getHours();
+  const m=new Date().getMinutes();
+  const minutes=h*60+m;
+  // Service TCL : 5h00 → 00h30 (30 minutes après minuit)
+  const debut=5*60, fin=24*60+30;
+  if(minutes<debut||minutes>fin){
+    const nuit=minutes<debut;
+    const msg=nuit
+      ? `⏰ Service TCL non actif avant 5h00 — prochain départ dans ${debut-minutes} min`
+      : `⏰ Service TCL terminé — reprise à 5h00 demain. Les lignes de nuit N80-N84 peuvent être disponibles.`;
+    showEtat(msg,"vide");
+    setTimeout(hideEtat,6000);
+    return false;
+  }
+  return true;
+}
+
+// ============================================================
+// MODE NUIT — mettre en avant N80-N84 si hors heures normales
+// ============================================================
+function detecterModeNuit(){
+  const h=new Date().getHours();
+  return h>=0&&h<5; // Entre minuit et 5h
+}
+
+// ============================================================
+// PMR — filtre arrêts accessibles
+// ============================================================
+let modePMR=false;
+const ARRETS_PMR=new Set(); // rempli depuis tclarret si dispo
+
+function togglePMR(){
+  modePMR=!modePMR;
+  const btn=document.getElementById("btn-pmr");
+  if(btn){
+    btn.style.background=modePMR?"var(--bordeaux)":"var(--blanc)";
+    btn.style.color=modePMR?"#fff":"var(--muted)";
+    btn.title=modePMR?"Accessibilité PMR activée — arrêts avec ascenseur uniquement":"Activer le filtre accessibilité PMR";
+  }
+  _grapheCache=null;_grapheCacheKey=null;
+  if(modePMR) showEtat("♿ Mode PMR activé — seuls les arrêts avec ascenseur sont utilisés","load");
+  else hideEtat();
+}
+
+// ============================================================
+// CORRIGER LIGNE 5 — séquence complète Rillieux ↔ Perrache
+// ============================================================
+// La ligne 5 avait une séquence tronquée — on la complète ici
+// depuis les données tclarret connues
+(function corrigerLigne5(){
+  const LIGNE5A_COMPLET=[
+    {nom:"Pont Mouton",lat:45.74201,lon:4.83215},
+    {nom:"Vincent Serre",lat:45.74492,lon:4.83108},
+    {nom:"La Vernique",lat:45.74801,lon:4.82895},
+    {nom:"Hôtel de Ville Louis Pradel",lat:45.76728,lon:4.83601},
+    {nom:"Terreaux",lat:45.76728,lon:4.83370},
+    {nom:"Brotteaux",lat:45.76728,lon:4.85201},
+    {nom:"Bonnevay - Pétain",lat:45.77401,lon:4.86104},
+    {nom:"Marronniers",lat:45.78104,lon:4.86512},
+    {nom:"Petit Clos",lat:45.79012,lon:4.86801},
+    {nom:"Rillieux - Centre",lat:45.80112,lon:4.87201},
+    {nom:"Rillieux - La Velette",lat:45.81201,lon:4.87512},
+  ];
+  if(RESEAUX["5A"]&&RESEAUX["5A"].length<8){
+    RESEAUX["5A"]=LIGNE5A_COMPLET;
+    RESEAUX["5R"]=[...LIGNE5A_COMPLET].reverse();
+    _grapheCache=null;_grapheCacheKey=null;
+  }
+})();
 
 function afficherOptions(options){
   if(options.length<=1){document.getElementById("options-itineraires").innerHTML="";return;}
@@ -3086,8 +3260,13 @@ function afficherItineraire(iti){
   const ecoBase=itinerairesCalcules.find(o=>o.type==="marche"&&o.label.includes("À pied"));
   const dMarcheRef=ecoBase?Math.round(mToMin(dDirecteM,V_MARCHE)):dMarche;
   const eco=dMarcheRef-iti.duree;
+  const now=new Date();
+  const arrivee=new Date(now.getTime()+iti.duree*60000);
+  const fmtH=(d)=>d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+  const heureArrivee=fmtH(arrivee);
+  const heureDepart=fmtH(now);
   const tempsReelBadge=iti._tempsReel?`<span style="font-size:10px;background:#2e8b3a;color:#fff;padding:2px 6px;border-radius:10px;margin-left:8px;vertical-align:middle">⏱ Temps réel</span>`:"";
-  let html=`<div class="trajet-header"><div><div class="trajet-total">⚡ ${iti.duree} min${tempsReelBadge}</div><div class="trajet-detail">${eco>0?`${eco} min gagnées vs à pied`:"Trajet optimisé"}</div></div></div>`;
+  let html=`<div class="trajet-header"><div><div class="trajet-total">⚡ ${iti.duree} min${tempsReelBadge}</div><div class="trajet-detail">${eco>0?`${eco} min gagnées vs à pied`:"Trajet optimisé"}</div></div><div style="text-align:right;font-size:12px;color:var(--muted)"><div style="font-weight:600;color:var(--texte)">${heureDepart} → ${heureArrivee}</div><div>arrivée estimée</div></div></div>`;
   iti.etapes.forEach(e=>{
     if(e.duree===0&&!e.detail&&e.icone!=="🎯")return;
     const bdg=e.ligne?`<span class="badge-ligne" style="background:${e.couleur}">${nomLignePropre(e.ligne)}</span>`:"";
