@@ -2932,15 +2932,17 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
     if(passe>0 && options.length>1 && opt.duree > options[1].duree+10) break;
   }
 
-  // Éliminer les options TCL non pertinentes :
-  // 1. Gain minimal de 8 min vs marche directe
-  // 2. Jamais plus de 1.5x la durée de marche directe (trajet absurde)
   const dureeMarche2=Math.round(mToMin(dDirecte,V_MARCHE));
-  const GAIN_MIN_TCL=8;
+  // Éliminer les options TCL non pertinentes :
+  // 1. Jamais plus de 1.5x la durée de marche directe (trajet absurde)
+  // 2. Gain minimal : 25% de temps gagné OU 5 min minimum (selon ce qui est le plus souple)
+  //    Exemples : trajet 12min marche → TCL doit être < 9min (25%) OU < 7min (5min)
+  //              trajet 40min marche → TCL doit être < 30min (25%) OU < 32min (5min)
+  const GAIN_MIN_TCL=Math.min(dureeMarche2*0.25, 5); // 25% du trajet ou 5 min max
   const optionsFiltrees=options.filter(o=>{
     if(o.type!=="tcl") return true;
     if(o.duree >= dureeMarche2*1.5) return false;  // absurde
-    return o.duree < dureeMarche2-GAIN_MIN_TCL;     // gain suffisant
+    return o.duree <= dureeMarche2-GAIN_MIN_TCL;    // gain suffisant
   });
 
   // Trier par durée réelle croissante — après toutes les passes
