@@ -2863,9 +2863,11 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
   let trouveResultat=false;
   for(let passe=0;passe<3;passe++){
     // En mode "Peu marcher" : seuil dest 200m max, accès limité à 600m
-    const seuilDest=peuMarcher?200:600;
-    let r=dijkstraTCL(latDep,lonDep,latDest,lonDest,{tcl:modes.tcl,chrono:modes.chrono},lignesExclues,seuilDest,peuMarcher?400:1500);
-    if(!r&&!peuMarcher) r=dijkstraTCL(latDep,lonDep,latDest,lonDest,{tcl:modes.tcl,chrono:modes.chrono},lignesExclues,900,1500);
+    // En mode PMR : seuil dest 1000m, accès 2000m (stations avec ascenseur plus espacées)
+    const seuilDest=peuMarcher?200:(modePMR?1000:600);
+    const seuilDepPMR=modePMR?2000:1500;
+    let r=dijkstraTCL(latDep,lonDep,latDest,lonDest,{tcl:modes.tcl,chrono:modes.chrono},lignesExclues,seuilDest,peuMarcher?400:seuilDepPMR);
+    if(!r&&!peuMarcher) r=dijkstraTCL(latDep,lonDep,latDest,lonDest,{tcl:modes.tcl,chrono:modes.chrono},lignesExclues,modePMR?1500:900,seuilDepPMR);
     if(!r) break;
     // Ignorer les résultats sans aucun tronçon TCL réel (passes vides après exclusions)
     if(!r.troncons.some(t=>t.type==="tcl")) break;
