@@ -186,10 +186,10 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
   <div class="tuto-section">
     <div class="tuto-titre">2️⃣ La destination</div>
     <div class="tuto-texte">
-      Tapez l'adresse ou le nom du lieu dans <strong>Destination</strong>. Une liste de suggestions apparaît, sélectionnez la bonne.<br><br>
-      Vous pouvez aussi cliquer directement sur la carte.
+      Tapez l'adresse ou le nom du lieu dans <strong>Destination</strong>. Une liste de suggestions apparaît avec la rue et la ville — sélectionnez la bonne.<br><br>
+      Vous pouvez aussi <strong>cliquer directement sur la carte</strong> pour définir la destination.
     </div>
-    <div class="tuto-note">💡 La recherche est centrée sur Lyon automatiquement</div>
+    <div class="tuto-note">💡 La recherche est centrée sur Lyon et la Métropole automatiquement</div>
   </div>
 
   <div class="tuto-section">
@@ -198,7 +198,7 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
     <br>
     <div class="tuto-etape">
       <div class="tuto-num">A</div>
-      <div class="tuto-content"><span class="tuto-chip bordeaux">⚡ Le plus rapide</span> — combine tous les modes disponibles pour minimiser le temps total. L'algorithme trouve automatiquement les correspondances optimales.</div>
+      <div class="tuto-content"><span class="tuto-chip bordeaux">⚡ Le plus rapide</span> — minimise le temps total, tous modes combinés. L'algorithme Dijkstra explore l'ensemble du réseau et trouve les meilleures correspondances automatiquement.</div>
     </div>
     <div class="tuto-etape">
       <div class="tuto-num">B</div>
@@ -206,32 +206,40 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
     </div>
     <div class="tuto-etape">
       <div class="tuto-num">C</div>
-      <div class="tuto-content"><span class="tuto-chip grey">🪑 Peu marcher</span> — favorise les transports pour minimiser la marche à pied</div>
+      <div class="tuto-content"><span class="tuto-chip grey">🪑 Peu marcher</span> — favorise les arrêts proches (max 400 m d'accès, max 200 m de marche finale) pour minimiser la marche totale</div>
     </div>
   </div>
 
   <div class="tuto-section">
-    <div class="tuto-titre">4️⃣ Les modes de transport</div>
-    <div class="tuto-texte">Cliquez sur un ou plusieurs modes pour les activer ou désactiver. Un mode <strong>encadré en bordeaux</strong> est actif, grisé = inactif.</div>
+    <div class="tuto-titre">4️⃣ Le profil de transport</div>
+    <div class="tuto-texte">Choisissez un profil d'un seul clic. Le profil actif est encadré en rouge.</div>
     <br>
     <div class="tuto-etape">
-      <div class="tuto-num" style="background:#e05c00">T</div>
-      <div class="tuto-content"><span class="tuto-chip" style="border:1.5px solid var(--bordeaux);color:var(--bordeaux)"><span class="tuto-dot" style="background:#e05c00"></span>Métro/Tram</span> — Métro (A, B, C, D) et tramways (T1 à T7) du réseau TCL Lyon. Correspond à toute la Métropole lyonnaise.</div>
+      <div class="tuto-num" style="background:var(--bordeaux)">🗺️</div>
+      <div class="tuto-content"><strong>Multimodal</strong> — combine TCL, Vélo'v et Dott pour le trajet le plus rapide. C'est le profil par défaut recommandé.</div>
     </div>
     <div class="tuto-etape">
-      <div class="tuto-num" style="background:#c0392b">B</div>
-      <div class="tuto-content"><span class="tuto-chip" style="border:1.5px solid var(--bordeaux);color:var(--bordeaux)"><span class="tuto-dot" style="background:#c0392b"></span>Bus</span> — Lignes de bus Chrono TCL à haute fréquence (C1 à C26). Proposées uniquement si elles apportent un gain réel par rapport au métro/tram.</div>
+      <div class="tuto-num" style="background:#e05c00">🚇</div>
+      <div class="tuto-content"><strong>Métro/Tram</strong> — métro (A, B, C, D) et tramways (T1 à T7) uniquement. Idéal pour les trajets sur les grands axes.</div>
     </div>
     <div class="tuto-etape">
-      <div class="tuto-num" style="background:#e8b400">V</div>
-      <div class="tuto-content"><span class="tuto-chip" style="border:1.5px solid var(--bordeaux);color:var(--bordeaux)"><span class="tuto-dot" style="background:#e8b400"></span>Vélo'v</span> — Vélos en libre-service. Proposé pour rejoindre un arrêt distant (> 600 m) si cela fait gagner au moins 3 minutes.</div>
+      <div class="tuto-num" style="background:#c0392b">🚌</div>
+      <div class="tuto-content"><strong>Bus</strong> — lignes Chrono (C1–C26) et bus réguliers (lignes 2, 3, 6, 12, 62, 72...). Couvre toute la métropole y compris les zones non desservies par le métro.</div>
     </div>
     <div class="tuto-etape">
-      <div class="tuto-num" style="background:#00b4d8">D</div>
-      <div class="tuto-content"><span class="tuto-chip" style="border:1.5px solid var(--bordeaux);color:var(--bordeaux)"><span class="tuto-dot" style="background:#00b4d8"></span>Dott</span> — Trottinettes électriques. À déposer obligatoirement dans un emplacement réservé Dott à destination.</div>
+      <div class="tuto-num" style="background:#e8b400">🚲</div>
+      <div class="tuto-content"><strong>Vélo'v</strong> — trajet en vélo en libre-service uniquement. Disponibilité vérifiée en temps réel.</div>
     </div>
-    <div class="tuto-note">💡 <strong>Correspondances automatiques :</strong> l'algorithme explore tout le réseau TCL et trouve les meilleures correspondances sans liste prédéfinie — même sur 2 ou 3 lignes enchaînées.</div>
-    <div class="tuto-note" style="margin-top:6px">⚠️ Vélo'v et Dott ne sont pas proposés en complément d'un trajet TCL en fin de trajet — uniquement pour accéder à un arrêt éloigné en début de trajet ou comme alternative complète.</div>
+    <div class="tuto-etape">
+      <div class="tuto-num" style="background:#00b4d8">🛴</div>
+      <div class="tuto-content"><strong>Dott</strong> — trottinette électrique uniquement. Dépôt obligatoire dans un emplacement réservé Dott à destination.</div>
+    </div>
+    <div class="tuto-etape">
+      <div class="tuto-num" style="background:#666">⚙️</div>
+      <div class="tuto-content"><strong>Personnalisé</strong> — affiche 4 toggles pour activer/désactiver chaque mode librement et créer votre propre combinaison.</div>
+    </div>
+    <div class="tuto-note">💡 <strong>Correspondances automatiques :</strong> l'algorithme explore plus de 100 lignes TCL et trouve les correspondances optimales sans liste prédéfinie — jusqu'à 3 lignes enchaînées.</div>
+    <div class="tuto-note" style="margin-top:6px">⚠️ En profil Multimodal, Vélo'v et Dott sont proposés en accès à l'arrêt si la distance dépasse 600 m et si cela fait gagner au moins 3 minutes. Jamais en fin de trajet sauf si la marche finale dépasse 400 m et qu'un véhicule est disponible à moins de 150 m de l'arrêt de descente.</div>
   </div>
 
   <div class="tuto-section">
@@ -240,19 +248,19 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
       Après avoir cliqué sur <span class="tuto-chip bordeaux">Trouver mon itinéraire →</span>, jusqu'à 3 options apparaissent classées par durée :<br><br>
       — Cliquez sur une option pour voir le détail des étapes<br>
       — Chaque étape a un bouton <strong>📱 Guider vers ce point</strong> qui ouvre Google Maps<br>
-      — La carte affiche le trajet : pointillés = marche, trait plein = transport<br>
-      — La marche finale depuis le dernier arrêt est toujours inférieure à 600 m
+      — La carte affiche le trajet réel arrêt par arrêt (pas en ligne droite)<br>
+      — La marche finale depuis le dernier arrêt est garantie ≤ 600 m
     </div>
-    <div class="tuto-note">💡 Si le badge <span style="background:#2e8b3a;color:#fff;padding:1px 6px;border-radius:10px;font-size:11px">⏱ Temps réel</span> apparaît, les durées d'attente TCL sont basées sur les vrais passages en direct.</div>
+    <div class="tuto-note">💡 Si le badge <span style="background:#2e8b3a;color:#fff;padding:1px 6px;border-radius:10px;font-size:11px">⏱ Temps réel</span> apparaît, les durées d'attente TCL sont basées sur les vrais passages en direct via l'API Grand Lyon.</div>
   </div>
 
   <div class="tuto-section">
     <div class="tuto-titre">🔄 Données en temps réel</div>
     <div class="tuto-texte">
       Les disponibilités <strong>Vélo'v</strong> et <strong>Dott</strong> sont récupérées en direct à chaque calcul.<br><br>
-      Les <strong>prochains passages TCL</strong> sont également consultés en temps réel via l'API Grand Lyon pour affiner les durées d'attente — si disponibles, ils remplacent les 3 minutes d'attente forfaitaires et le badge <span style="background:#2e8b3a;color:#fff;padding:1px 6px;border-radius:10px;font-size:11px">⏱ Temps réel</span> s'affiche.
+      Les <strong>prochains passages TCL</strong> sont consultés via l'API Grand Lyon pour affiner les durées d'attente — si disponibles, ils remplacent l'attente forfaitaire de 3 minutes.
     </div>
-    <div class="tuto-note">💡 L'algorithme de routage est un <strong>Dijkstra sur graphe TCL</strong> — il explore l'ensemble des 565 arrêts et 72 séquences de lignes pour trouver le chemin optimal, correspondances comprises.</div>
+    <div class="tuto-note">💡 L'algorithme est un <strong>Dijkstra sur graphe TCL</strong> couvrant <strong>119 lignes</strong> (métro, tram, 26 Chrono, 64 bus réguliers) et plus de 3 000 nœuds. Les données GTFS des 64 lignes additionnelles sont chargées dynamiquement depuis un fichier externe pour garder la page légère.</div>
   </div>
 </div><!-- fin panel-aide -->
 
@@ -2273,7 +2281,9 @@ function mToMin(m,v){return m/v/60;}
 function nomLignePropre(l){const s=String(l).toUpperCase();return(s.length>1&&(s.endsWith("A")||s.endsWith("R")))?s.slice(0,-1):s;}
 function couleurLigne(l){const s=String(l).toUpperCase();const u=(s.length>1&&(s.endsWith("A")||s.endsWith("R")))?s.slice(0,-1):s;if(["A","B","C","D"].includes(u))return"#e05c00";if(/^T\d/.test(u))return"#0070b8";if(/^C\d/.test(u))return"#c0392b";return"#2e8b3a";}
 function vitesseLigne(l){const s=String(l).toUpperCase();const u=(s.length>1&&(s.endsWith("A")||s.endsWith("R")))?s.slice(0,-1):s;if(["A","B","C","D"].includes(u))return V_METRO;if(/^T\d/.test(u))return V_TRAM;return 4.5;} // bus Chrono et réguliers ~4.5 m/s
-function lienMaps(lat1,lon1,lat2,lon2){return`https://www.google.com/maps/dir/?api=1&origin=${lat1},${lon1}&destination=${lat2},${lon2}&travelmode=walking`;}
+function lienMaps(lat1,lon1,lat2,lon2,mode="walking"){
+  return`https://www.google.com/maps/dir/?api=1&origin=${lat1},${lon1}&destination=${lat2},${lon2}&travelmode=${mode}`;
+}
 function showEtat(msg,type){const el=document.getElementById("etat-msg");el.innerHTML=msg;el.className=type;el.style.display="block";}
 function hideEtat(){document.getElementById("etat-msg").style.display="none";}
 
@@ -2584,10 +2594,10 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
         dureeMarcheOption=dureeVersDott+dureeEnDott;
         const stationDepot=dottStations.map(s=>({...s,d:dist(latDest,lonDest,s.lat,s.lon)})).sort((a,b)=>a.d-b.d)[0];
         const infoDepot=stationDepot?`Emplacement "${stationDepot.name}" à ${Math.round(stationDepot.d)} m`:"Emplacement réservé Dott";
-        etapesMarche.push({icone:"🛴",titre:"Marchez vers la trottinette Dott",detail:`Trottinette à ${Math.round(dd.d)} m`,duree:dureeVersDott,maps:lienMaps(latDep,lonDep,dd.lat,dd.lon),couleur:"#00b4d8"});
-        etapesMarche.push({icone:"🛴",titre:"Roulez jusqu’à destination",detail:`~${Math.round(dDirecte)} m en trottinette`,duree:dureeEnDott,maps:lienMaps(dd.lat,dd.lon,latDest,lonDest),couleur:"#00b4d8"});
+        etapesMarche.push({icone:"🛴",titre:"Marchez vers la trottinette Dott",detail:`Trottinette à ${Math.round(dd.d)} m`,duree:dureeVersDott,maps:lienMaps(latDep,lonDep,dd.lat,dd.lon,"bicycling"),couleur:"#00b4d8"});
+        etapesMarche.push({icone:"🛴",titre:"Roulez jusqu’à destination",detail:`~${Math.round(dDirecte)} m en trottinette`,duree:dureeEnDott,maps:lienMaps(dd.lat,dd.lon,latDest,lonDest,"bicycling"),couleur:"#00b4d8"});
         const dureeFinDott=stationDepot?Math.round(mToMin(stationDepot.d,V_MARCHE)):0;
-        etapesMarche.push({icone:"🛴",titre:"Déposez la trottinette",detail:infoDepot,duree:0,maps:stationDepot?lienMaps(latDest,lonDest,stationDepot.lat,stationDepot.lon):null,couleur:"#00b4d8"});
+        etapesMarche.push({icone:"🛴",titre:"Déposez la trottinette",detail:infoDepot,duree:0,maps:stationDepot?lienMaps(latDest,lonDest,stationDepot.lat,stationDepot.lon,"bicycling"):null,couleur:"#00b4d8"});
         if(stationDepot&&stationDepot.d>50){etapesMarche.push({icone:"🚶",titre:"Marchez jusqu’à votre destination",detail:`${Math.round(stationDepot.d)} m`,duree:dureeFinDott,maps:lienMaps(stationDepot.lat,stationDepot.lon,latDest,lonDest),couleur:"#7a6a5a"});dureeMarcheOption+=dureeFinDott;}
         etapesMarche.push({icone:"🎯",titre:"Vous êtes arrivé !",detail:"",duree:0,couleur:"#2e8b3a"});
       }
@@ -2599,8 +2609,8 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
         const dureeVersVelo=Math.round(mToMin(vd.d,V_MARCHE));
         const dureeEnVelo=Math.round(mToMin(dDirecte,V_VELO));
         dureeMarcheOption=dureeVersVelo+dureeEnVelo;
-        etapesMarche.push({icone:"🚲",titre:`Vélo'v — station "${vd.name}"`,detail:`${vd.available_bikes} vélo(s) à ${Math.round(vd.d)} m`,duree:dureeVersVelo,maps:lienMaps(latDep,lonDep,vd.lat,vd.lng),couleur:"#e8b400",dispo:vd.available_bikes});
-        etapesMarche.push({icone:"🚲",titre:"Pédalez jusqu’à destination",detail:vdest?`Déposez à "${vdest.name}" (${vdest.available_bike_stands} place(s))`:`~${Math.round(dDirecte)} m`,duree:dureeEnVelo,maps:lienMaps(vd.lat,vd.lng,latDest,lonDest),couleur:"#e8b400"});
+        etapesMarche.push({icone:"🚲",titre:`Vélo'v — station "${vd.name}"`,detail:`${vd.available_bikes} vélo(s) à ${Math.round(vd.d)} m`,duree:dureeVersVelo,maps:lienMaps(latDep,lonDep,vd.lat,vd.lng,"bicycling"),couleur:"#e8b400",dispo:vd.available_bikes});
+        etapesMarche.push({icone:"🚲",titre:"Pédalez jusqu’à destination",detail:vdest?`Déposez à "${vdest.name}" (${vdest.available_bike_stands} place(s))`:`~${Math.round(dDirecte)} m`,duree:dureeEnVelo,maps:lienMaps(vd.lat,vd.lng,latDest,lonDest,"bicycling"),couleur:"#e8b400"});
         etapesMarche.push({icone:"🎯",titre:"Vous êtes arrivé !",detail:"",duree:0,couleur:"#2e8b3a"});
       }
     }
@@ -2643,11 +2653,11 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
       if(modeAcces?.type==="dott"){
         const d1=Math.round(mToMin(modeAcces.bike.d,V_MARCHE)),d2=Math.round(mToMin(distAcces,V_DOTT));
         const stD=dottStations.map(s=>({...s,d:dist(arretAcces.lat,arretAcces.lon,s.lat,s.lon)})).sort((a,b)=>a.d-b.d)[0];
-        etapes.push({icone:"🛴",titre:"Prenez une trottinette Dott",detail:`Trottinette à ${Math.round(modeAcces.bike.d)} m`,duree:d1,maps:lienMaps(latDep,lonDep,modeAcces.bike.lat,modeAcces.bike.lon),couleur:"#00b4d8"});
-        etapes.push({icone:"🛴",titre:`Roulez jusqu'à ${arretAcces.nom}`,detail:stD?`Déposez à "${stD.name}" (${Math.round(stD.d)} m de l'arrêt)`:"Emplacement Dott",duree:d2,maps:lienMaps(modeAcces.bike.lat,modeAcces.bike.lon,arretAcces.lat,arretAcces.lon),couleur:"#00b4d8"});
+        etapes.push({icone:"🛴",titre:"Prenez une trottinette Dott",detail:`Trottinette à ${Math.round(modeAcces.bike.d)} m`,duree:d1,maps:lienMaps(latDep,lonDep,modeAcces.bike.lat,modeAcces.bike.lon,"bicycling"),couleur:"#00b4d8"});
+        etapes.push({icone:"🛴",titre:`Roulez jusqu'à ${arretAcces.nom}`,detail:stD?`Déposez à "${stD.name}" (${Math.round(stD.d)} m de l'arrêt)`:"Emplacement Dott",duree:d2,maps:lienMaps(modeAcces.bike.lat,modeAcces.bike.lon,arretAcces.lat,arretAcces.lon,"bicycling"),couleur:"#00b4d8"});
       }else if(modeAcces?.type==="velov"){
         const d1=Math.round(mToMin(modeAcces.station.d,V_MARCHE)),d2=Math.round(mToMin(distAcces,V_VELO));
-        etapes.push({icone:"🚲",titre:`Vélo'v — "${modeAcces.station.name}"`,detail:`${modeAcces.station.available_bikes} vélo(s) dispo`,duree:d1+d2,maps:lienMaps(latDep,lonDep,modeAcces.station.lat,modeAcces.station.lng),couleur:"#e8b400",dispo:modeAcces.station.available_bikes});
+        etapes.push({icone:"🚲",titre:`Vélo'v — "${modeAcces.station.name}"`,detail:`${modeAcces.station.available_bikes} vélo(s) dispo`,duree:d1+d2,maps:lienMaps(latDep,lonDep,modeAcces.station.lat,modeAcces.station.lng,"bicycling"),couleur:"#e8b400",dispo:modeAcces.station.available_bikes});
       }else{
         etapes.push({icone:"🚶",titre:`Marchez jusqu'à ${arretAcces.nom}`,detail:`${Math.round(distAcces)} m`,duree:dureeAccesMarche,maps:lienMaps(latDep,lonDep,arretAcces.lat,arretAcces.lon),couleur:"#7a6a5a"});
       }
@@ -2714,8 +2724,8 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
       if(modeFin?.type==="dott"){
         const d1=Math.round(mToMin(modeFin.bike.d,V_MARCHE));
         const d2=Math.round(mToMin(distFin,V_DOTT));
-        etapes.push({icone:"🛴",titre:"Prenez une trottinette Dott",detail:`Trottinette à ${Math.round(modeFin.bike.d)} m de l'arrêt`,duree:d1,maps:lienMaps(arretFin.lat,arretFin.lon,modeFin.bike.lat,modeFin.bike.lon),couleur:"#00b4d8"});
-        etapes.push({icone:"🛴",titre:"Roulez jusqu'à votre destination",detail:modeFin.depot?`Déposez à "${modeFin.depot.name}" (${Math.round(modeFin.depot.d)} m)`:"Emplacement Dott",duree:d2,maps:lienMaps(modeFin.bike.lat,modeFin.bike.lon,latDest,lonDest),couleur:"#00b4d8"});
+        etapes.push({icone:"🛴",titre:"Prenez une trottinette Dott",detail:`Trottinette à ${Math.round(modeFin.bike.d)} m de l'arrêt`,duree:d1,maps:lienMaps(arretFin.lat,arretFin.lon,modeFin.bike.lat,modeFin.bike.lon,"bicycling"),couleur:"#00b4d8"});
+        etapes.push({icone:"🛴",titre:"Roulez jusqu'à votre destination",detail:modeFin.depot?`Déposez à "${modeFin.depot.name}" (${Math.round(modeFin.depot.d)} m)`:"Emplacement Dott",duree:d2,maps:lienMaps(modeFin.bike.lat,modeFin.bike.lon,latDest,lonDest,"bicycling"),couleur:"#00b4d8"});
         if(modeFin.depot&&modeFin.depot.d>50){
           const dWalk=Math.round(mToMin(modeFin.depot.d,V_MARCHE));
           etapes.push({icone:"🚶",titre:"Marchez jusqu'à votre destination",detail:`${Math.round(modeFin.depot.d)} m`,duree:dWalk,maps:lienMaps(modeFin.depot.lat,modeFin.depot.lon,latDest,lonDest),couleur:"#7a6a5a"});
@@ -2723,8 +2733,8 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
       }else if(modeFin?.type==="velov"){
         const d1=Math.round(mToMin(modeFin.station.d,V_MARCHE));
         const d2=Math.round(mToMin(distFin,V_VELO));
-        etapes.push({icone:"🚲",titre:`Vélo'v — station "${modeFin.station.name}"`,detail:`${modeFin.station.available_bikes} vélo(s) disponible(s) à ${Math.round(modeFin.station.d)} m`,duree:d1,maps:lienMaps(arretFin.lat,arretFin.lon,modeFin.station.lat,modeFin.station.lng),couleur:"#e8b400",dispo:modeFin.station.available_bikes});
-        etapes.push({icone:"🚲",titre:"Pédalez jusqu'à destination",detail:`Déposez à "${modeFin.depot.name}" (${modeFin.depot.available_bike_stands} place(s) libres, ${Math.round(modeFin.depot.d)} m)`,duree:d2,maps:lienMaps(modeFin.station.lat,modeFin.station.lng,latDest,lonDest),couleur:"#e8b400"});
+        etapes.push({icone:"🚲",titre:`Vélo'v — station "${modeFin.station.name}"`,detail:`${modeFin.station.available_bikes} vélo(s) disponible(s) à ${Math.round(modeFin.station.d)} m`,duree:d1,maps:lienMaps(arretFin.lat,arretFin.lon,modeFin.station.lat,modeFin.station.lng,"bicycling"),couleur:"#e8b400",dispo:modeFin.station.available_bikes});
+        etapes.push({icone:"🚲",titre:"Pédalez jusqu'à destination",detail:`Déposez à "${modeFin.depot.name}" (${modeFin.depot.available_bike_stands} place(s) libres, ${Math.round(modeFin.depot.d)} m)`,duree:d2,maps:lienMaps(modeFin.station.lat,modeFin.station.lng,latDest,lonDest,"bicycling"),couleur:"#e8b400"});
         if(modeFin.depot&&modeFin.depot.d>50){
           const dWalk=Math.round(mToMin(modeFin.depot.d,V_MARCHE));
           etapes.push({icone:"🚶",titre:"Marchez jusqu'à votre destination",detail:`${Math.round(modeFin.depot.d)} m`,duree:dWalk,maps:lienMaps(modeFin.depot.lat,modeFin.depot.lng,latDest,lonDest),couleur:"#7a6a5a"});
