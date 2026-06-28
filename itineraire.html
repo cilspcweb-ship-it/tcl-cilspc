@@ -2241,10 +2241,12 @@ function bonusLigne(cle){
   return 0; // bus réguliers numériques
 }
 
-// Construction du graphe TCL (faite une seule fois, mise en cache)
-let _graphe=null;
+// Cache du graphe : construit une seule fois par combinaison de modes
+let _grapheCache=null;
+let _grapheCacheKey=null;
 function construireGraphe(modesTCL){
-  // modesTCL = {tcl, chrono} — filtre les lignes autorisées
+  const key=JSON.stringify(modesTCL);
+  if(_grapheCache&&_grapheCacheKey===key) return _grapheCache;
   const noeuds={};  // id → {id, ligne, arrêt, lat, lon}
   const adj={};     // id → [{to, poids, type, ligne, distM}]
 
@@ -2301,7 +2303,9 @@ function construireGraphe(modesTCL){
     }
   }
 
-  return {noeuds, adj};
+  _grapheCache={noeuds,adj};
+  _grapheCacheKey=key;
+  return _grapheCache;
 }
 
 // MinHeap simple pour Dijkstra
@@ -2424,14 +2428,20 @@ function dijkstraTCL(latDep,lonDep,latDest,lonDest,modesTCL,lignesExclues=new Se
     cur=p.from;
   }
 
-  // Regrouper les segments TCL consécutifs sur la même ligne en "tronçons"
+  // Vérifier que l'accès réel ne dépasse pas SEUIL_DEP (peut arriver via transferts)
+  const premierNoeudSrc=chemin.find(c=>prev[c.id]?.from==="SOURCE");
+  if(premierNoeudSrc){
+    const dAccesReel=dist(latDep,lonDep,noeuds[premierNoeudSrc.id].arret.lat,noeuds[premierNoeudSrc.id].arret.lon);
+    if(dAccesReel>SEUIL_DEP) return null;
+  }
+
+  // Regrouper les segments TCL consécutifs en tronçons — max 3 tronçons (2 correspondances)
   const troncons=[];
   let i=0;
   while(i<chemin.length){
     const c=chemin[i];
     if(!c.node) { i++; continue; }
     if(c.edge?.type==="tcl"){
-      // Accumule tous les segments consécutifs de la même ligne
       const cle=c.node.cle;
       const arretDep=noeuds[c.fromId]||c.node;
       let j=i;
@@ -2442,7 +2452,10 @@ function dijkstraTCL(latDep,lonDep,latDest,lonDest,modesTCL,lignesExclues=new Se
       }
       const arretArr=chemin[j-1].node;
       const dureeTCL=mToMin(distTCL,vitesseLigne(cle))+ATTENTE_TCL;
-      troncons.push({type:"tcl",cle,arretDep:arretDep.arret||arretDep,arretArr:arretArr.arret,dureeTCL:Math.round(dureeTCL),distTCL:Math.round(distTCL)});
+      // Limiter à 3 tronçons TCL maximum (2 correspondances)
+      if(troncons.filter(t=>t.type==="tcl").length<3){
+        troncons.push({type:"tcl",cle,arretDep:arretDep.arret||arretDep,arretArr:arretArr.arret,dureeTCL:Math.round(dureeTCL),distTCL:Math.round(distTCL)});
+      }
       i=j;
     } else if(c.edge?.type==="transfert"){
       troncons.push({type:"transfert",distM:c.edge.distM});
@@ -2457,7 +2470,7 @@ function dijkstraTCL(latDep,lonDep,latDest,lonDest,modesTCL,lignesExclues=new Se
   const dernierNoeud=noeuds[chemin[0]?.fromId]||noeuds[chemin[0]?.id];
   const arretDepart=chemin.length?noeuds[chemin.find(c=>c.edge?.type==="tcl")?.fromId]||noeuds[chemin[0].id]:null;
 
-  // Trouver le nœud source (premier TCL du chemin)
+  // Trouver le nœud source (premier TCL du chemin) et calculer distAcces réel
   let premierTCLFromId=null;
   for(const c of chemin){
     if(c.edge?.type==="tcl"){ premierTCLFromId=c.fromId; break; }
@@ -2465,6 +2478,9 @@ function dijkstraTCL(latDep,lonDep,latDest,lonDest,modesTCL,lignesExclues=new Se
   const noeudAcces=noeuds[premierTCLFromId];
   const arretAcces=noeudAcces?noeudAcces.arret:null;
   const distAcces=arretAcces?dist(latDep,lonDep,arretAcces.lat,arretAcces.lon):0;
+
+  // Rejeter si l'accès réel dépasse le seuil (peut arriver via transferts depuis un nœud proche)
+  if(distAcces>SEUIL_DEP) return null;
   const distFin=dist(latDest,lonDest,premierNoeud.arret.lat,premierNoeud.arret.lon);
 
   return {
@@ -2679,22 +2695,25 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
     if(passe>0 && options.length>1 && opt.duree > options[1].duree+10) break;
   }
 
-  // Éliminer les options TCL qui ne font gagner que peu de temps vs la marche directe
-  // Seuil : gain minimal de 8 minutes pour justifier une option TCL
+  // Éliminer les options TCL non pertinentes :
+  // 1. Gain minimal de 8 min vs marche directe
+  // 2. Jamais plus de 1.5x la durée de marche directe (trajet absurde)
   const GAIN_MIN_TCL=8;
   const optionsFiltrees=options.filter(o=>{
     if(o.type!=="tcl") return true;
-    return o.duree<dureeMarche2-GAIN_MIN_TCL;
+    if(o.duree >= dureeMarche2*1.5) return false;  // absurde
+    return o.duree < dureeMarche2-GAIN_MIN_TCL;     // gain suffisant
   });
 
-  // Trier : les options TCL utilisent leur scorePondere (favorise métro > tram > bus)
-  // La marche reste triée par durée réelle
-  optionsFiltrees.sort((a,b)=>{
-    const sa=a.type==="tcl"&&a._score!==undefined?a._score:a.duree;
-    const sb=b.type==="tcl"&&b._score!==undefined?b._score:b.duree;
-    return sa-sb;
+  // Trier par durée réelle croissante — après toutes les passes
+  optionsFiltrees.sort((a,b)=>a.duree-b.duree);
+  // Dédupliquer les options identiques (même _lignesId)
+  const vusIds=new Set();
+  return optionsFiltrees.filter(o=>{
+    if(!o._lignesId) return true;
+    if(vusIds.has(o._lignesId)) return false;
+    vusIds.add(o._lignesId); return true;
   });
-  return optionsFiltrees;
 }
 
 async function chercher(){
