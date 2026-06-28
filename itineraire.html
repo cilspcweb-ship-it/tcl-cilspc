@@ -2327,6 +2327,13 @@ function construireGraphe(modesTCL){
 
     for(let i=0;i<reseau.length;i++){
       const a=reseau[i];
+      // En mode PMR : n'utiliser que les lignes réellement accessibles
+      // Tram T1-T7 (plancher bas) + Métro A/B/C/D (avec ascenseur)
+      // Les bus Chrono, même s'ils desservent des arrêts communs avec le tram, sont exclus
+      if(modePMR){
+        const lignePMR=/^(T[1-7]|A|B|C|D)$/.test(nom);
+        if(!lignePMR) continue;
+      }
       const id=`${cle}:${i}`;
       addNode(id,{id,cle,nom,arret:a,idx:i});
 
