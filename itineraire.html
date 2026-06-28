@@ -2261,6 +2261,27 @@ window.addEventListener("load",()=>{
   demanderGeolocSilencieuse();
   // Afficher l'historique des trajets récents au démarrage
   afficherHistorique();
+  // Lire les paramètres URL pour le partage (?dep=lat,lon&dest=lat,lon)
+  const urlParams=new URLSearchParams(window.location.search);
+  const pDep=urlParams.get("dep"), pDest=urlParams.get("dest");
+  if(pDep&&pDest){
+    const [latD,lonD]=pDep.split(",").map(Number);
+    const [latA,lonA]=pDest.split(",").map(Number);
+    if(!isNaN(latD)&&!isNaN(lonD)&&!isNaN(latA)&&!isNaN(lonA)){
+      coordDepart={lat:latD,lon:lonD};
+      coordDest={lat:latA,lon:lonA};
+      ajouterMarqueur(latD,lonD,"📍","Départ");
+      ajouterMarqueur(latA,lonA,"🎯","Destination");
+      document.getElementById("input-depart").value=`📍 ${latD.toFixed(4)}, ${lonD.toFixed(4)}`;
+      document.getElementById("input-dest").value=`🎯 ${latA.toFixed(4)}, ${lonA.toFixed(4)}`;
+      // Reverse geocoder pour avoir les noms lisibles
+      Promise.all([reverseGeocode(latD,lonD),reverseGeocode(latA,lonA)]).then(([nomD,nomA])=>{
+        if(nomD) document.getElementById("input-depart").value=nomD;
+        if(nomA) document.getElementById("input-dest").value=nomA;
+      });
+      setTimeout(chercher, 800); // Lancer le calcul après init de la carte
+    }
+  }
 
   map.on("click",e=>{
     coordDest={lat:e.latlng.lat,lon:e.latlng.lng};
@@ -2482,6 +2503,9 @@ function construireGraphe(modesTCL){
 
     for(let i=0;i<reseau.length;i++){
       const a=reseau[i];
+      // En mode PMR : n'utiliser que les arrêts avec ascenseur (stations métro principalement)
+      // Exception : on garde quand même le premier et dernier arrêt pour permettre accès/sortie
+      if(modePMR && !ARRETS_ASCENSEUR.has(a.nom) && i>0 && i<reseau.length-1) continue;
       const id=`${cle}:${i}`;
       addNode(id,{id,cle,nom,arret:a,idx:i});
 
@@ -3175,8 +3199,14 @@ function detecterModeNuit(){
 // ============================================================
 // PMR — filtre arrêts accessibles
 // ============================================================
-let modePMR=false;
-const ARRETS_PMR=new Set(); // rempli depuis tclarret si dispo
+// Arrêts avec ascenseur (données tclarret, ascenseur=True) — stations métro principalement
+const ARRETS_ASCENSEUR=new Set([
+  "Vaulx-en-Velin La Soie","Guillotière Gabriel Péri","Bellecour","Gorge de Loup","Valmy",
+  "Gare de Vénissieux","Gare de Vaise-G.Collomb","Laurent Bonnevay","Debourg","Perrache",
+  "Oullins Centre","Gare d'Oullins","Saxe - Gambetta","Part-Dieu Auditorium",
+  "Charpennes Charles Hernu","Croix-Luizet","Cuire","Hénon","Gare Part-Dieu Villette",
+  "Vieux Lyon Cat. St-Jean","Ampère - Victor Hugo","Cordeliers","Hôtel de Ville L. Pradel"
+]);
 
 function togglePMR(){
   modePMR=!modePMR;
