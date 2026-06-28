@@ -2448,9 +2448,6 @@ function construireGraphe(modesTCL){
 
     for(let i=0;i<reseau.length;i++){
       const a=reseau[i];
-      // En mode PMR : n'utiliser que les arrêts avec ascenseur (stations métro principalement)
-      // Exception : on garde quand même le premier et dernier arrêt pour permettre accès/sortie
-      if(modePMR && !ARRETS_ASCENSEUR.has(a.nom) && i>0 && i<reseau.length-1) continue;
       const id=`${cle}:${i}`;
       addNode(id,{id,cle,nom,arret:a,idx:i});
 
@@ -2543,7 +2540,8 @@ function dijkstraTCL(latDep,lonDep,latDest,lonDest,modesTCL,lignesExclues=new Se
   }
 
   // Nœuds d'entrée : arrêts accessibles à pied depuis le départ (< 1500m)
-  // Nœuds de sortie : arrêts à < 200m de la destination
+  // En mode PMR : seulement les arrêts avec ascenseur comme points d'embarquement/débarquement
+  // Les arrêts intermédiaires restent dans le graphe pour assurer la continuité des lignes
   const SEUIL_DEST=seuilDest;
   const SEUIL_DEP=seuilDep;
 
@@ -2555,7 +2553,9 @@ function dijkstraTCL(latDep,lonDep,latDest,lonDest,modesTCL,lignesExclues=new Se
   for(const n of nodeList){
     const d=dist(latDep,lonDep,n.arret.lat,n.arret.lon);
     if(d>SEUIL_DEP) continue;
-    const poids=mToMin(d,V_MARCHE)+ATTENTE_TCL; // marche + attente première ligne
+    // PMR : n'embarquer qu'à un arrêt avec ascenseur
+    if(modePMR && !ARRETS_ASCENSEUR.has(n.arret.nom)) continue;
+    const poids=mToMin(d,V_MARCHE)+ATTENTE_TCL;
     if(dist_[n.id]===undefined||poids<dist_[n.id]){
       dist_[n.id]=poids;
       prev[n.id]={from:"SOURCE",distAcces:d,poidsAcces:poids};
@@ -2580,16 +2580,15 @@ function dijkstraTCL(latDep,lonDep,latDest,lonDest,modesTCL,lignesExclues=new Se
   }
 
   // Chercher le meilleur nœud d'arrivée (< SEUIL_DEST de la destination)
-  // Anti-rebours : si l'arrêt est plus loin de la destination que le point de départ,
-  // on ajoute une pénalité proportionnelle à l'excès de distance
+  // En mode PMR : seulement les arrêts avec ascenseur comme points de débarquement
   const dDepDest=dist(latDep,lonDep,latDest,lonDest);
   let meilleurId=null, meilleurPoids=Infinity;
   for(const n of nodeList){
     if(!dist_[n.id]) continue;
+    // PMR : ne débarquer qu'à un arrêt avec ascenseur
+    if(modePMR && !ARRETS_ASCENSEUR.has(n.arret.nom)) continue;
     const dFin=dist(latDest,lonDest,n.arret.lat,n.arret.lon);
     if(dFin>SEUIL_DEST) continue;
-    // Pénalité si l'arrêt d'arrivée est plus loin de la destination que le départ
-    // (trajet qui "dépasse" la destination et revient en arrière)
     const dArretDest=dist(latDest,lonDest,n.arret.lat,n.arret.lon);
     const dArretDep=dist(latDep,lonDep,n.arret.lat,n.arret.lon);
     const penaliteRebours=dArretDep>dDepDest+500?mToMin(dArretDep-dDepDest,V_METRO)*2:0;
