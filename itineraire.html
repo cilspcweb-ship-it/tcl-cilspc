@@ -2698,6 +2698,7 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
   // Éliminer les options TCL non pertinentes :
   // 1. Gain minimal de 8 min vs marche directe
   // 2. Jamais plus de 1.5x la durée de marche directe (trajet absurde)
+  const dureeMarche2=Math.round(mToMin(dDirecte,V_MARCHE));
   const GAIN_MIN_TCL=8;
   const optionsFiltrees=options.filter(o=>{
     if(o.type!=="tcl") return true;
