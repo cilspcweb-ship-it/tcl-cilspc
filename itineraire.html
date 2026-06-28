@@ -73,6 +73,7 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
 .iti-option:active,.iti-option.selected{border-color:var(--bordeaux);background:#fff5f5}
 .iti-option-titre{font-size:13px;font-weight:600;color:var(--texte);display:flex;align-items:center;gap:8px}
 .iti-option-detail{font-size:11px;color:var(--muted);margin-top:2px}
+.field-hint{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4;padding-left:2px}
 #footer{text-align:center;padding:12px 16px 20px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);margin-top:14px}
 
 #nav{display:flex;background:var(--blanc);border-bottom:2px solid var(--border);overflow-x:auto}
@@ -122,6 +123,7 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
       <input type="text" id="input-depart" placeholder="Ma position actuelle…" autocomplete="off">
       <div class="suggestions" id="sug-depart" style="display:none"></div>
     </div>
+    <div class="field-hint">📡 Détectée automatiquement — ou tapez une adresse · ou cliquez sur la carte</div>
   </div>
   <div class="field">
     <label>🎯 Destination</label>
@@ -129,6 +131,7 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
       <input type="text" id="input-dest" placeholder="Adresse, lieu, quartier…" autocomplete="off">
       <div class="suggestions" id="sug-dest" style="display:none"></div>
     </div>
+    <div class="field-hint">⌨️ Tapez une adresse et choisissez dans la liste · ou cliquez directement sur la carte</div>
   </div>
   <div class="field">
     <label>Priorité</label>
