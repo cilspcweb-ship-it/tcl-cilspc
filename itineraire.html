@@ -2249,7 +2249,7 @@ class MinHeap{
 
 // Dijkstra principal
 // Retourne {dureeTotal, etapesTCL:[{cle,arretDepart,arretArrivee,duree1,distVersArret,distDepuisArret},...]}
-function dijkstraTCL(latDep,lonDep,latDest,lonDest,modesTCL,lignesExclues=new Set(),seuilDest=600){
+function dijkstraTCL(latDep,lonDep,latDest,lonDest,modesTCL,lignesExclues=new Set(),seuilDest=600,seuilDep=1500){
   const {noeuds,adj}=construireGraphe(modesTCL);
   const nodeList=Object.values(noeuds).filter(n=>!lignesExclues.has(n.cle));
   // Filtrer aussi les arêtes TCL dont la ligne source est exclue
@@ -2267,7 +2267,7 @@ function dijkstraTCL(latDep,lonDep,latDest,lonDest,modesTCL,lignesExclues=new Se
   // Nœuds d'entrée : arrêts accessibles à pied depuis le départ (< 1500m)
   // Nœuds de sortie : arrêts à < 200m de la destination
   const SEUIL_DEST=seuilDest;
-  const SEUIL_DEP=1500;
+  const SEUIL_DEP=seuilDep;
 
   const dist_={}; // poids minimal connu vers chaque nœud
   const prev={};  // prédécesseur
@@ -2506,8 +2506,55 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
       }
     }
 
-    // Marche finale
-    if(distFin>0){
+    // Marche finale — si > 400m et micromode disponible près de l'arrêt de descente
+    const SEUIL_FIN_MICRO=400;
+    if(distFin>SEUIL_FIN_MICRO){
+      let modeFin=null;
+      const dureeFinMarche=mToMin(distFin,V_MARCHE);
+
+      if(modes.dott&&dott.length){
+        // Chercher une trottinette Dott près de l'arrêt de descente (< 300m)
+        const df=dott.map(b=>({...b,d:dist(arretFin.lat,arretFin.lon,b.lat,b.lon)})).sort((a,b)=>a.d-b.d)[0];
+        // Station de dépôt près de la destination (< 500m)
+        const stDepot=dottStations&&dottStations.length?dottStations.map(s=>({...s,d:dist(latDest,lonDest,s.lat,s.lon)})).sort((a,b)=>a.d-b.d)[0]:null;
+        const dureeDott=df?mToMin(df.d,V_MARCHE)+mToMin(distFin,V_DOTT):Infinity;
+        if(df&&df.d<100&&stDepot&&stDepot.d<500&&dureeFinMarche-dureeDott>=2)
+          modeFin={type:"dott",bike:df,depot:stDepot};
+      }
+
+      if(!modeFin&&modes.velov&&velov.length){
+        // Chercher un Vélov près de l'arrêt de descente (< 300m) avec vélos disponibles
+        const vf=velov.filter(s=>s.available_bikes>0).map(s=>({...s,d:dist(arretFin.lat,arretFin.lon,s.lat,s.lng)})).sort((a,b)=>a.d-b.d)[0];
+        // Station de dépôt près de la destination avec places libres
+        const vdest=velov.filter(s=>s.available_bike_stands>0).map(s=>({...s,d:dist(latDest,lonDest,s.lat,s.lng)})).sort((a,b)=>a.d-b.d)[0];
+        const dureeVelo=vf?mToMin(vf.d,V_MARCHE)+mToMin(distFin,V_VELO):Infinity;
+        if(vf&&vf.d<150&&vdest&&vdest.d<500&&dureeFinMarche-dureeVelo>=2)
+          modeFin={type:"velov",station:vf,depot:vdest};
+      }
+
+      if(modeFin?.type==="dott"){
+        const d1=Math.round(mToMin(modeFin.bike.d,V_MARCHE));
+        const d2=Math.round(mToMin(distFin,V_DOTT));
+        etapes.push({icone:"🛴",titre:"Prenez une trottinette Dott",detail:`Trottinette à ${Math.round(modeFin.bike.d)} m de l'arrêt`,duree:d1,maps:lienMaps(arretFin.lat,arretFin.lon,modeFin.bike.lat,modeFin.bike.lon),couleur:"#00b4d8"});
+        etapes.push({icone:"🛴",titre:"Roulez jusqu'à votre destination",detail:modeFin.depot?`Déposez à "${modeFin.depot.name}" (${Math.round(modeFin.depot.d)} m)`:"Emplacement Dott",duree:d2,maps:lienMaps(modeFin.bike.lat,modeFin.bike.lon,latDest,lonDest),couleur:"#00b4d8"});
+        if(modeFin.depot&&modeFin.depot.d>50){
+          const dWalk=Math.round(mToMin(modeFin.depot.d,V_MARCHE));
+          etapes.push({icone:"🚶",titre:"Marchez jusqu'à votre destination",detail:`${Math.round(modeFin.depot.d)} m`,duree:dWalk,maps:lienMaps(modeFin.depot.lat,modeFin.depot.lon,latDest,lonDest),couleur:"#7a6a5a"});
+        }
+      }else if(modeFin?.type==="velov"){
+        const d1=Math.round(mToMin(modeFin.station.d,V_MARCHE));
+        const d2=Math.round(mToMin(distFin,V_VELO));
+        etapes.push({icone:"🚲",titre:`Vélo'v — station "${modeFin.station.name}"`,detail:`${modeFin.station.available_bikes} vélo(s) disponible(s) à ${Math.round(modeFin.station.d)} m`,duree:d1,maps:lienMaps(arretFin.lat,arretFin.lon,modeFin.station.lat,modeFin.station.lng),couleur:"#e8b400",dispo:modeFin.station.available_bikes});
+        etapes.push({icone:"🚲",titre:"Pédalez jusqu'à destination",detail:`Déposez à "${modeFin.depot.name}" (${modeFin.depot.available_bike_stands} place(s) libres, ${Math.round(modeFin.depot.d)} m)`,duree:d2,maps:lienMaps(modeFin.station.lat,modeFin.station.lng,latDest,lonDest),couleur:"#e8b400"});
+        if(modeFin.depot&&modeFin.depot.d>50){
+          const dWalk=Math.round(mToMin(modeFin.depot.d,V_MARCHE));
+          etapes.push({icone:"🚶",titre:"Marchez jusqu'à votre destination",detail:`${Math.round(modeFin.depot.d)} m`,duree:dWalk,maps:lienMaps(modeFin.depot.lat,modeFin.depot.lng,latDest,lonDest),couleur:"#7a6a5a"});
+        }
+      }else{
+        // Pas de micromode disponible : marche simple
+        etapes.push({icone:"🚶",titre:"Marchez jusqu'à votre destination",detail:`${Math.round(distFin)} m`,duree:Math.round(mToMin(distFin,V_MARCHE)),maps:lienMaps(arretFin.lat,arretFin.lon,latDest,lonDest),couleur:"#7a6a5a"});
+      }
+    }else if(distFin>0){
       etapes.push({icone:"🚶",titre:"Marchez jusqu'à votre destination",detail:`${Math.round(distFin)} m`,duree:Math.round(mToMin(distFin,V_MARCHE)),maps:lienMaps(arretFin.lat,arretFin.lon,latDest,lonDest),couleur:"#7a6a5a"});
     }
     etapes.push({icone:"🎯",titre:"Vous êtes arrivé !",detail:"",duree:0,couleur:"#2e8b3a"});
@@ -2517,16 +2564,19 @@ async function calculerItineraires(latDep,lonDep,latDest,lonDest,velov,dott,dott
     const lignePrincipale=troncons.find(t=>t.type==="tcl")?.cle||"";
     return {type:"tcl",label,ligne:lignePrincipale,duree:dureeTotal,_score:scorePondere,
             detail:etapes.filter(e=>e.icone==="🚇").map(e=>e.detail).join(" | "),
-            etapes,trace,_lignesId:labelLignes.join("|"),_troncons:troncons};
+            etapes,trace,_lignesId:labelLignes.join("|"),_troncons:troncons,
+            _distAcces:distAcces,_distFin:distFin};
   }
 
+  const peuMarcher=priorite==="min-marche";
   // Jusqu'à 3 passes Dijkstra : chaque passe exclut les lignes principales déjà trouvées
   const lignesExclues=new Set();
   let trouveResultat=false;
   for(let passe=0;passe<3;passe++){
-    let r=dijkstraTCL(latDep,lonDep,latDest,lonDest,{tcl:modes.tcl,chrono:modes.chrono},lignesExclues,600);
-    // Si aucun résultat avec 600m, tenter avec 900m (zones peu desservies comme Gerland)
-    if(!r) r=dijkstraTCL(latDep,lonDep,latDest,lonDest,{tcl:modes.tcl,chrono:modes.chrono},lignesExclues,900);
+    // En mode "Peu marcher" : seuil dest 200m max, accès limité à 600m
+    const seuilDest=peuMarcher?200:600;
+    let r=dijkstraTCL(latDep,lonDep,latDest,lonDest,{tcl:modes.tcl,chrono:modes.chrono},lignesExclues,seuilDest,peuMarcher?400:1500);
+    if(!r&&!peuMarcher) r=dijkstraTCL(latDep,lonDep,latDest,lonDest,{tcl:modes.tcl,chrono:modes.chrono},lignesExclues,900,1500);
     if(!r) break;
     // Ignorer les résultats sans aucun tronçon TCL réel (passes vides après exclusions)
     if(!r.troncons.some(t=>t.type==="tcl")) break;
@@ -2565,6 +2615,34 @@ async function chercher(){
     const[velov,dott,dottStations]=await Promise.all([modes.velov?getVelov():Promise.resolve([]),modes.dott?getDott():Promise.resolve([]),modes.dott?getDottStations():Promise.resolve([])]);
     const options=await calculerItineraires(coordDepart.lat,coordDepart.lon,coordDest.lat,coordDest.lon,velov,dott,dottStations);
     if(priorite==="marche"){afficherItineraire(options.find(o=>o.type==="marche")||options[0]);hideEtat();return;}
+
+    // Mode "Peu marcher" : retrier les options par marche totale minimale (accès + fin)
+    if(priorite==="min-marche"){
+      const optionsTCLpeu=options.filter(o=>o.type==="tcl");
+      if(optionsTCLpeu.length===0){
+        // Aucun arrêt TCL dans les seuils "peu marcher" — afficher message et fallback marche
+        showEtat("⚠️ Aucun arrêt TCL à moins de 400m de votre position ou à moins de 200m de la destination. Résultat en mode \"Le plus rapide\" affiché.","err");
+        setTimeout(hideEtat,5000);
+        // Fallback : recalculer en mode rapide
+        const excl2=new Set();
+        for(let p=0;p<3;p++){
+          let r=dijkstraTCL(coordDepart.lat,coordDepart.lon,coordDest.lat,coordDest.lon,{tcl:modes.tcl,chrono:modes.chrono},excl2,600,1500);
+          if(!r) r=dijkstraTCL(coordDepart.lat,coordDepart.lon,coordDest.lat,coordDest.lon,{tcl:modes.tcl,chrono:modes.chrono},excl2,900,1500);
+          if(!r||!r.troncons.some(t=>t.type==="tcl")) break;
+          const opt=construireEtapesDepuisResultat(r,velov,dott,dottStations);
+          if(!options.some(o=>o._lignesId===opt._lignesId)) options.push(opt);
+          r.troncons.filter(t=>t.type==="tcl").forEach(t=>excl2.add(t.cle));
+        }
+      }
+      options.sort((a,b)=>{
+        // Pour les options TCL : minimiser distAcces + distFin
+        const marcheA=(a._distAcces||0)+(a._distFin||0)+(a.type==="marche"?99999:0);
+        const marcheB=(b._distAcces||0)+(b._distFin||0)+(b.type==="marche"?99999:0);
+        // À marche égale (±50m), trier par durée
+        if(Math.abs(marcheA-marcheB)<50) return (a.duree||0)-(b.duree||0);
+        return marcheA-marcheB;
+      });
+    }
 
     // Enrichissement temps réel : remplace ATTENTE_TCL forfaitaire par les vraies minutes
     const optionsTCL=options.filter(o=>o.type==="tcl");
