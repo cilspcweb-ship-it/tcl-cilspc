@@ -41,6 +41,11 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
 .mode-check.active{border-color:var(--bordeaux);color:var(--bordeaux);background:#fff5f5}
 .mode-check input{display:none}
 .mode-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.profils-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px}
+.profil-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 4px;border:1.5px solid var(--border);border-radius:10px;background:var(--blanc);color:var(--muted);font-family:'Outfit',sans-serif;font-size:10px;font-weight:600;cursor:pointer;transition:all .18s;touch-action:manipulation;width:100%}
+.profil-btn .profil-icon{font-size:20px;line-height:1}
+.profil-btn .profil-label{font-size:10px;line-height:1.2}
+.profil-btn.active{border-color:var(--bordeaux);background:#fff0f0;color:var(--bordeaux);box-shadow:0 0 0 2px var(--bordeaux)}
 #btn-chercher{width:100%;padding:14px;background:var(--bordeaux);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:16px;font-weight:600;cursor:pointer;touch-action:manipulation}
 #btn-chercher:active{background:var(--bordeaux2)}
 #btn-chercher:disabled{background:#ccc;cursor:not-allowed}
@@ -134,14 +139,32 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
     </div>
   </div>
   <div class="field">
-    <label>Modes</label>
-    <div class="modes-row">
-      <label class="mode-check active" id="mode-tcl"><input type="checkbox" checked onchange="toggleMode('tcl')"><span class="mode-dot" style="background:var(--metro)"></span>Métro/Tram</label>
-      <label class="mode-check active" id="mode-chrono"><input type="checkbox" checked onchange="toggleMode('chrono')"><span class="mode-dot" style="background:#c0392b"></span>Bus</label>
-      <label class="mode-check active" id="mode-velov"><input type="checkbox" checked onchange="toggleMode('velov')"><span class="mode-dot" style="background:var(--velov)"></span>Vélo'v</label>
-      <label class="mode-check active" id="mode-dott"><input type="checkbox" checked onchange="toggleMode('dott')"><span class="mode-dot" style="background:var(--dott)"></span>Dott</label>
+    <label>Priorité</label>
+    <div class="options-row">
+      <button class="option-btn active" onclick="setPriorite('rapide',this)">⚡ Le plus rapide</button>
+      <button class="option-btn" onclick="setPriorite('marche',this)">🚶 À pied</button>
+      <button class="option-btn" onclick="setPriorite('min-marche',this)">🪑 Peu marcher</button>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-top:-4px">Cliquez un ou plusieurs modes — ils peuvent être combinés entre eux</div>
+  </div>
+  <div class="field">
+    <label>Transport</label>
+    <div class="profils-row">
+      <button class="profil-btn active" id="profil-multi"    onclick="setProfil('multi')"   title="Tous les modes combinés"><span class="profil-icon">🗺️</span><span class="profil-label">Multimodal</span></button>
+      <button class="profil-btn"        id="profil-tcl"      onclick="setProfil('tcl')"     title="Métro et Tram uniquement"><span class="profil-icon">🚇</span><span class="profil-label">Métro/Tram</span></button>
+      <button class="profil-btn"        id="profil-bus"      onclick="setProfil('bus')"     title="Bus Chrono et réguliers"><span class="profil-icon">🚌</span><span class="profil-label">Bus</span></button>
+      <button class="profil-btn"        id="profil-velov"    onclick="setProfil('velov')"   title="Vélo'v uniquement"><span class="profil-icon">🚲</span><span class="profil-label">Vélo'v</span></button>
+      <button class="profil-btn"        id="profil-dott"     onclick="setProfil('dott')"    title="Trottinette Dott"><span class="profil-icon">🛴</span><span class="profil-label">Dott</span></button>
+      <button class="profil-btn"        id="profil-custom"   onclick="setProfil('custom')"  title="Choisir manuellement"><span class="profil-icon">⚙️</span><span class="profil-label">Personnalisé</span></button>
+    </div>
+    <div id="modes-custom" style="display:none;margin-top:8px">
+      <div class="modes-row">
+        <label class="mode-check active" id="mode-tcl"><input type="checkbox" checked onchange="toggleMode('tcl')"><span class="mode-dot" style="background:var(--metro)"></span>Métro/Tram</label>
+        <label class="mode-check active" id="mode-chrono"><input type="checkbox" checked onchange="toggleMode('chrono')"><span class="mode-dot" style="background:#c0392b"></span>Bus</label>
+        <label class="mode-check active" id="mode-velov"><input type="checkbox" checked onchange="toggleMode('velov')"><span class="mode-dot" style="background:var(--velov)"></span>Vélo'v</label>
+        <label class="mode-check active" id="mode-dott"><input type="checkbox" checked onchange="toggleMode('dott')"><span class="mode-dot" style="background:var(--dott)"></span>Dott</label>
+      </div>
+    </div>
+    <div id="profil-desc" style="font-size:11px;color:var(--muted);margin-top:4px">Combine TCL, Vélo'v et Dott pour le trajet optimal</div>
   </div>
   <button id="btn-chercher" onclick="chercher()">Trouver mon itinéraire →</button>
 </div>
@@ -2086,6 +2109,25 @@ window.addEventListener("load",()=>{
   routeLayer=L.layerGroup().addTo(map);
   setTimeout(()=>map.invalidateSize(),200);
 
+  // Chargement asynchrone des données GTFS étendues (64 lignes supplémentaires)
+  // Le fichier gtfs-ext.json est servi par Cloudflare CDN depuis le même repo
+  fetch("/gtfs-ext.json")
+    .then(r=>r.ok?r.json():null)
+    .then(data=>{
+      if(!data) return;
+      let nb=0;
+      for(const [cle,arrets] of Object.entries(data)){
+        if(!RESEAUX[cle]&&arrets&&arrets.length>=3){
+          RESEAUX[cle]=arrets;
+          nb++;
+        }
+      }
+      // Invalider le cache Dijkstra pour forcer la reconstruction avec les nouvelles lignes
+      _grapheCache=null; _grapheCacheKey=null;
+      console.log("GTFS étendu chargé : "+nb+" nouvelles séquences");
+    })
+    .catch(()=>console.log("GTFS étendu non disponible — données de base utilisées"));
+
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(pos=>{
       coordDepart={lat:pos.coords.latitude,lon:pos.coords.longitude};
@@ -2127,6 +2169,44 @@ window.addEventListener("load",()=>{
 function ajouterMarqueur(lat,lon,emoji,titre){
   const icon=L.divIcon({html:`<div style="font-size:22px;line-height:1">${emoji}</div>`,className:"",iconAnchor:[11,22]});
   L.marker([lat,lon],{icon}).addTo(markersLayer).bindPopup(titre);
+}
+
+const PROFILS={
+  multi:  {tcl:true, chrono:true, velov:true,  dott:true,  desc:"Combine TCL, Vélo'v et Dott pour le trajet optimal"},
+  tcl:    {tcl:true, chrono:false, velov:false, dott:false, desc:"Métro et Tram uniquement — lignes lourdes TCL"},
+  bus:    {tcl:false,chrono:true,  velov:false, dott:false, desc:"Bus Chrono et lignes régulières uniquement"},
+  velov:  {tcl:false,chrono:false, velov:true,  dott:false, desc:"Vélo'v uniquement — trajet à vélo en libre-service"},
+  dott:   {tcl:false,chrono:false, velov:false, dott:true,  desc:"Trottinette Dott uniquement"},
+  custom: {tcl:true, chrono:true,  velov:true,  dott:true,  desc:"Choisissez manuellement les modes à combiner"},
+};
+
+let profilActif='multi';
+
+function setProfil(profil){
+  profilActif=profil;
+  const p=PROFILS[profil];
+  // Mettre à jour les modes
+  modes.tcl=p.tcl; modes.chrono=p.chrono; modes.velov=p.velov; modes.dott=p.dott;
+  // Activer/désactiver les checkboxes custom
+  ['tcl','chrono','velov','dott'].forEach(m=>{
+    const el=document.getElementById('mode-'+m);
+    if(!el) return;
+    const cb=el.querySelector('input');
+    if(cb) cb.checked=modes[m];
+    el.classList.toggle('active',modes[m]);
+  });
+  // Boutons profil
+  document.querySelectorAll('.profil-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('profil-'+profil);
+  if(btn) btn.classList.add('active');
+  // Afficher/masquer les toggles custom
+  const custom=document.getElementById('modes-custom');
+  if(custom) custom.style.display=profil==='custom'?'block':'none';
+  // Description
+  const desc=document.getElementById('profil-desc');
+  if(desc) desc.textContent=p.desc;
+  // Invalider cache graphe si les modes TCL changent
+  _grapheCache=null; _grapheCacheKey=null;
 }
 
 function setPriorite(val,btn){
