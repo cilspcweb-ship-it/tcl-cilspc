@@ -27,14 +27,16 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
 #maj-time{font-size:11px;color:rgba(250,246,239,.55);margin-top:2px}
 
 /* ONGLETS NAVIGATION */
-#nav{display:flex;gap:0;background:var(--creme);border-bottom:2px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-#nav::-webkit-scrollbar{display:none}
-.nav-tab{padding:10px 18px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;display:flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap;flex-shrink:0}
+#nav{background:var(--creme);border-bottom:2px solid var(--border)}
+#nav-tabs{display:flex;gap:0}
+.nav-tab{flex:1;padding:10px 8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
 .nav-tab.active{color:var(--bordeaux);border-bottom-color:var(--bordeaux);font-weight:600}
 .nav-tab:hover{color:var(--bordeaux)}
 .nav-tab .badge-count{background:var(--bordeaux);color:#fff;border-radius:20px;padding:1px 7px;font-size:10px;font-weight:700}
-.nav-tab-link{padding:10px 18px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;display:flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap;flex-shrink:0}
-.nav-tab-link:hover{color:var(--bordeaux);border-bottom-color:var(--bordeaux)}
+/* Liens externes — rangée séparée sous les onglets */
+#nav-links{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 12px;border-top:1px solid var(--border)}
+.nav-link-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 10px;background:var(--blanc);border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;color:var(--bordeaux);text-decoration:none;transition:all .2s}
+.nav-link-btn:hover{background:var(--creme2);border-color:var(--bordeaux)}
 
 /* FILTRES TRANSPORT */
 #filtres{display:flex;gap:6px;flex-wrap:wrap;padding:12px 20px 10px;background:var(--creme);border-bottom:1px solid var(--border)}
@@ -124,10 +126,14 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
 </div>
 
 <div id="nav">
-  <button class="nav-tab active" onclick="setOnglet('passages',this)">🚏 Passages</button>
-  <button class="nav-tab" onclick="setOnglet('perturbations',this)">⚠️ Info trafic <span class="badge-count" id="badge-perturb" style="display:none">0</span></button>
-  <a class="nav-tab-link" href="/itineraire" target="_blank" rel="noopener noreferrer" title="Calculer un itinéraire multimodal dans toute la Métropole lyonnaise">🗺️ Itinéraire</a>
-  <a class="nav-tab-link" href="https://www.cilspc.fr/velov-dott" target="_blank" rel="noopener noreferrer" title="Trouver un Vélo'v ou une trottinette Dott près de vous">🚲 Vélo'v · Dott</a>
+  <div id="nav-tabs">
+    <button class="nav-tab active" onclick="setOnglet('passages',this)">🚏 Passages</button>
+    <button class="nav-tab" onclick="setOnglet('perturbations',this)">⚠️ Info trafic <span class="badge-count" id="badge-perturb" style="display:none">0</span></button>
+  </div>
+  <div id="nav-links">
+    <a class="nav-link-btn" href="/itineraire" target="_blank" rel="noopener noreferrer">🗺️ Itinéraire Lyon</a>
+    <a class="nav-link-btn" href="https://www.cilspc.fr/velov-dott" target="_blank" rel="noopener noreferrer">🚲 Vélo'v · Dott</a>
+  </div>
 </div>
 
 <!-- ONGLET PASSAGES -->
