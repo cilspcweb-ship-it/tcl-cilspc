@@ -248,6 +248,7 @@ html,body{background:var(--creme);color:var(--texte);font-family:'Outfit',sans-s
   <div id="etat-msg"></div>
   <div id="options-itineraires"></div>
   <div id="etapes"></div>
+  <div id="aide-recherche" style="display:none;padding:0 0 8px"></div>
 </div>
 
 </div><!-- fin panel-app -->
@@ -1746,106 +1747,12 @@ const RESEAU_D_A=[{nom:"Gare de Vénissieux",lat:45.70557,lon:4.88808},{nom:"Par
 const RESEAU_D_R=[{nom:"Gare de Vaise-G.Collomb",lat:45.7798,lon:4.80374},{nom:"Valmy",lat:45.77477,lon:4.80533},{nom:"Gorge de Loup",lat:45.76643,lon:4.80544},{nom:"Vieux Lyon Cat. St-Jean",lat:45.76006,lon:4.82649},{nom:"Bellecour",lat:45.75672,lon:4.83383},{nom:"Guillotière Gabriel Péri",lat:45.75541,lon:4.84253},{nom:"Saxe - Gambetta",lat:45.75383,lon:4.84713},{nom:"Garibaldi",lat:45.75139,lon:4.85421},{nom:"Sans Souci",lat:45.74775,lon:4.86476},{nom:"Monplaisir Lumière",lat:45.74533,lon:4.87179},{nom:"Grange Blanche",lat:45.74283,lon:4.8789},{nom:"Laennec",lat:45.73867,lon:4.88626},{nom:"Mermoz - Pinel",lat:45.7305,lon:4.88721},{nom:"Parilly",lat:45.71975,lon:4.88741},{nom:"Gare de Vénissieux",lat:45.7056,lon:4.88796}];
 const RESEAU_T1_A=[{nom:"Debourg",lat:45.731189792061,lon:4.834616339392},{nom:"ENS Lyon",lat:45.731462441908,lon:4.828847141001},{nom:"Halle Tony Garnier",lat:45.731723881009,lon:4.82287984032},{nom:"Musée des Confluences",lat:45.733665486632,lon:4.818912774513},{nom:"Hôtel Région Montrochet",lat:45.740590337622,lon:4.819096334937},{nom:"Sainte-Blandine",lat:45.744188681502,lon:4.822145229881},{nom:"Place des Archives",lat:45.747063607189,lon:4.824597656987},{nom:"Perrache",lat:45.749567419463,lon:4.827112617066},{nom:"Quai Claude Bernard",lat:45.749617694782,lon:4.835304876608},{nom:"Rue de l'Université",lat:45.751123284685,lon:4.83896016637},{nom:"Saint-André",lat:45.752885942222,lon:4.841081951243},{nom:"Guillotière Gabriel Péri",lat:45.754902397972,lon:4.84254653226},{nom:"Liberté",lat:45.758865571055,lon:4.84248582279},{nom:"Saxe - Préfecture",lat:45.760086942032,lon:4.845187113321},{nom:"Palais Justice Mairie 3e",lat:45.76031001943,lon:4.848463314899},{nom:"Part-Dieu Auditorium",lat:45.76065564564,lon:4.853826157655},{nom:"Gare Part-Dieu V.Merle",lat:45.761738959473,lon:4.857910001199},{nom:"Thiers - Lafayette",lat:45.764331873062,lon:4.862076181498},{nom:"Collège Bellecombe",lat:45.766664120482,lon:4.861968223097},{nom:"Charpennes Charles Hernu",lat:45.77086410861,lon:4.863070704671},{nom:"Charpennes Charles Hernu",lat:45.770885978321,lon:4.863714960871},{nom:"Le Tonkin",lat:45.774051790769,lon:4.864049522242},{nom:"Chorel",lat:45.774908913921,lon:4.864928765504},{nom:"Condorcet",lat:45.77792176771,lon:4.866947119035},{nom:"Condorcet",lat:45.778838548065,lon:4.86710341027},{nom:"Université Lyon 1",lat:45.780841780619,lon:4.866309339229},{nom:"La Doua - Gaston Berger",lat:45.781489172322,lon:4.87206557739},{nom:"La Doua",lat:45.778919863552,lon:4.871879833476},{nom:"INSA - Einstein",lat:45.782338994058,lon:4.87791687359},{nom:"Croix-Luizet",lat:45.783627066038,lon:4.883144874335},{nom:"IUT Feyssine",lat:45.78689106079,lon:4.881982140462}];
 const RESEAU_T1_R=[{nom:"IUT Feyssine",lat:45.786868221347,lon:4.881881755328},{nom:"Croix-Luizet",lat:45.783723687545,lon:4.883111524375},{nom:"INSA - Einstein",lat:45.782377980594,lon:4.877614026932},{nom:"La Doua - Gaston Berger",lat:45.781564499479,lon:4.872102113724},{nom:"La Doua",lat:45.779067962141,lon:4.872090047829},{nom:"Condorcet",lat:45.777916275042,lon:4.866907244805},{nom:"Condorcet",lat:45.779037034304,lon:4.866327945258},{nom:"Université Lyon 1",lat:45.780905915661,lon:4.866279355758},{nom:"Chorel",lat:45.77469194721,lon:4.864970244187},{nom:"Le Tonkin",lat:45.774128165783,lon:4.864059592463},{nom:"Charpennes Charles Hernu",lat:45.771245984506,lon:4.864257066327},{nom:"Charpennes Charles Hernu",lat:45.771029573797,lon:4.862997786416},{nom:"Collège Bellecombe",lat:45.76666014402,lon:4.861872865697},{nom:"Thiers - Lafayette",lat:45.764328307342,lon:4.861966571367},{nom:"Gare Part-Dieu V.Merle",lat:45.761737022937,lon:4.857871974579},{nom:"Part-Dieu Auditorium",lat:45.760761664307,lon:4.853806832196},{nom:"Palais Justice Mairie 3e",lat:45.760385367114,lon:4.848450937729},{nom:"Saxe - Préfecture",lat:45.760161370049,lon:4.845175589981},{nom:"Liberté",lat:45.758858545491,lon:4.842385198369},{nom:"Guillotière Gabriel Péri",lat:45.754939213634,lon:4.842437625069},{nom:"Saint-André",lat:45.75291411447,lon:4.841001327335},{nom:"Rue de l'Université",lat:45.751188571239,lon:4.839015466662},{nom:"Quai Claude Bernard",lat:45.749652758757,lon:4.835209653167},{nom:"Perrache",lat:45.749599274761,lon:4.827011586363},{nom:"Place des Archives",lat:45.747092720219,lon:4.824526847335},{nom:"Sainte-Blandine",lat:45.744217016723,lon:4.822076958771},{nom:"Hôtel Région Montrochet",lat:45.740630038181,lon:4.819002483534},{nom:"Musée des Confluences",lat:45.733602610581,lon:4.818878318988},{nom:"Halle Tony Garnier",lat:45.73169546514,lon:4.822870459235},{nom:"ENS Lyon",lat:45.731399925028,lon:4.828841225406},{nom:"Debourg",lat:45.731165018435,lon:4.83460107668}];
-const RESEAU_T2_A=[
-  {nom:"Perrache",lat:45.74957,lon:4.82711},
-  {nom:"Centre Berthelot",lat:45.74702,lon:4.83631},
-  {nom:"Jean Macé",lat:45.74512,lon:4.84226},
-  {nom:"Garibaldi - Berthelot",lat:45.74365,lon:4.84686},
-  {nom:"Route de Vienne",lat:45.74211,lon:4.85166},
-  {nom:"Jet d'Eau - M. France",lat:45.73985,lon:4.85871},
-  {nom:"Villon",lat:45.73838,lon:4.8633},
-  {nom:"Bachut - Mairie du 8ème",lat:45.73682,lon:4.86819},
-  {nom:"Jean XXIII - M. Bastié",lat:45.74019,lon:4.87455},
-  {nom:"Grange Blanche",lat:45.74241,lon:4.87957},
-  {nom:"Ambroise Paré",lat:45.74149,lon:4.88391},
-  {nom:"Desgenettes",lat:45.7388,lon:4.89325},
-  {nom:"Essarts - Iris",lat:45.73721,lon:4.89812},
-  {nom:"Boutasse - C. Rousset",lat:45.7349,lon:4.90445},
-  {nom:"Bron Hôtel de Ville",lat:45.73338,lon:4.90904},
-  {nom:"Les Alizés",lat:45.73151,lon:4.91472},
-  {nom:"Rebufer",lat:45.72751,lon:4.91565},
-  {nom:"Parilly - Université",lat:45.72209,lon:4.91519},
-  {nom:"Europe - Université",lat:45.7196,lon:4.91818},
-  {nom:"Porte des Alpes",lat:45.71847,lon:4.92583}
-];
-const RESEAU_T2_R=[
-  {nom:"Europe - Université",lat:45.71966,lon:4.91814},
-  {nom:"Parilly - Université",lat:45.72213,lon:4.91529},
-  {nom:"Rebufer",lat:45.7275,lon:4.91568},
-  {nom:"Les Alizés",lat:45.73157,lon:4.91476},
-  {nom:"Bron Hôtel de Ville",lat:45.73345,lon:4.90909},
-  {nom:"Boutasse - C. Rousset",lat:45.73497,lon:4.9045},
-  {nom:"Essarts - Iris",lat:45.73726,lon:4.89816},
-  {nom:"Desgenettes",lat:45.73887,lon:4.89329},
-  {nom:"Ambroise Paré",lat:45.74156,lon:4.88395},
-  {nom:"Grange Blanche",lat:45.7425,lon:4.8796},
-  {nom:"Jean XXIII - M. Bastié",lat:45.74025,lon:4.87448},
-  {nom:"Bachut - Mairie du 8ème",lat:45.73689,lon:4.86823},
-  {nom:"Villon",lat:45.73845,lon:4.86335},
-  {nom:"Jet d'Eau - M. France",lat:45.73992,lon:4.85876},
-  {nom:"Route de Vienne",lat:45.74218,lon:4.8517},
-  {nom:"Garibaldi - Berthelot",lat:45.74371,lon:4.8469},
-  {nom:"Jean Macé",lat:45.74518,lon:4.8423},
-  {nom:"Centre Berthelot",lat:45.74708,lon:4.83636},
-  {nom:"Perrache",lat:45.7496,lon:4.82701}
-];
+const RESEAU_T2_A=[{nom:"Saint-Priest Bel Air",lat:45.69262,lon:4.95583},{nom:"Cordière",lat:45.69363,lon:4.9497},{nom:"Saint-Priest Jules Ferry",lat:45.69469,lon:4.94686},{nom:"Esplanade des Arts",lat:45.69446,lon:4.94062},{nom:"St-Priest Hôtel de Ville",lat:45.69502,lon:4.93685},{nom:"Alfred de Vigny",lat:45.69962,lon:4.9361},{nom:"Salvador Allende",lat:45.70343,lon:4.93484},{nom:"Hauts de Feuilly",lat:45.70815,lon:4.93756},{nom:"Parc Technologique",lat:45.71436,lon:4.93119},{nom:"Porte des Alpes",lat:45.71847,lon:4.92583},{nom:"Europe - Université",lat:45.7196,lon:4.91818},{nom:"Parilly - Université",lat:45.72209,lon:4.91519},{nom:"Rebufer",lat:45.72751,lon:4.91565},{nom:"Les Alizés",lat:45.73151,lon:4.91472},{nom:"Bron Hôtel de Ville",lat:45.73338,lon:4.90904},{nom:"Boutasse - C. Rousset",lat:45.7349,lon:4.90445},{nom:"Essarts - Iris",lat:45.73721,lon:4.89812},{nom:"Desgenettes",lat:45.7388,lon:4.89325},{nom:"Ambroise Paré",lat:45.74149,lon:4.8839},{nom:"Grange Blanche",lat:45.74241,lon:4.87957},{nom:"Jean XXIII - M. Bastié",lat:45.74019,lon:4.87455},{nom:"Bachut - Mairie du 8ème",lat:45.73682,lon:4.86819},{nom:"Villon",lat:45.73838,lon:4.8633},{nom:"Jet d'Eau - M. France",lat:45.73985,lon:4.85871},{nom:"Route de Vienne",lat:45.74211,lon:4.85166},{nom:"Garibaldi - Berthelot",lat:45.74365,lon:4.84686},{nom:"Jean Macé",lat:45.74512,lon:4.84226},{nom:"Centre Berthelot",lat:45.74702,lon:4.83631},{nom:"Perrache",lat:45.74957,lon:4.82711},{nom:"Place des Archives",lat:45.74706,lon:4.8246},{nom:"Sainte-Blandine",lat:45.74419,lon:4.82215},{nom:"Hôtel Région Montrochet",lat:45.74059,lon:4.8191}];
+const RESEAU_T2_R=[{nom:"Saint-Priest Bel Air",lat:45.6927,lon:4.95584},{nom:"Cordière",lat:45.69368,lon:4.94978},{nom:"Saint-Priest Jules Ferry",lat:45.69475,lon:4.94678},{nom:"Esplanade des Arts",lat:45.69453,lon:4.94063},{nom:"St-Priest Hôtel de Ville",lat:45.6951,lon:4.93685},{nom:"Alfred de Vigny",lat:45.69963,lon:4.93612},{nom:"Salvador Allende",lat:45.70345,lon:4.93495},{nom:"Hauts de Feuilly",lat:45.70808,lon:4.93761},{nom:"Parc Technologique",lat:45.71442,lon:4.93126},{nom:"Porte des Alpes",lat:45.71844,lon:4.9258},{nom:"Europe - Université",lat:45.71966,lon:4.91814},{nom:"Parilly - Université",lat:45.72213,lon:4.91529},{nom:"Rebufer",lat:45.7275,lon:4.91568},{nom:"Les Alizés",lat:45.73157,lon:4.91476},{nom:"Bron Hôtel de Ville",lat:45.73345,lon:4.90909},{nom:"Boutasse - C. Rousset",lat:45.73497,lon:4.9045},{nom:"Essarts - Iris",lat:45.73726,lon:4.89816},{nom:"Desgenettes",lat:45.73887,lon:4.89329},{nom:"Ambroise Paré",lat:45.74156,lon:4.88395},{nom:"Grange Blanche",lat:45.7425,lon:4.8796},{nom:"Jean XXIII - M. Bastié",lat:45.74025,lon:4.87448},{nom:"Bachut - Mairie du 8ème",lat:45.73689,lon:4.86823},{nom:"Villon",lat:45.73845,lon:4.86335},{nom:"Jet d'Eau - M. France",lat:45.73992,lon:4.85876},{nom:"Route de Vienne",lat:45.74218,lon:4.8517},{nom:"Garibaldi - Berthelot",lat:45.74371,lon:4.8469},{nom:"Jean Macé",lat:45.74518,lon:4.8423},{nom:"Centre Berthelot",lat:45.74708,lon:4.83636},{nom:"Perrache",lat:45.7496,lon:4.82701},{nom:"Place des Archives",lat:45.74709,lon:4.82453},{nom:"Sainte-Blandine",lat:45.74422,lon:4.82208},{nom:"Hôtel Région Montrochet",lat:45.74063,lon:4.819}];
 const RESEAU_T3_A=[{nom:"Dauphiné -Lacassagne",lat:45.75287,lon:4.86881},{nom:"Gare Part-Dieu Villette",lat:45.76022,lon:4.86188},{nom:"Reconnaissance - Balzac",lat:45.7545,lon:4.88515},{nom:"Montchat Place Ronde",lat:45.75414,lon:4.89084},{nom:"Gare de Villeurbanne",lat:45.75592,lon:4.8926},{nom:"Bel Air - Les Brosses",lat:45.75822,lon:4.90993},{nom:"Bel Air - Les Brosses",lat:45.75839,lon:4.91047},{nom:"Vaulx-en-Velin La Soie",lat:45.76112,lon:4.92085},{nom:"Vaulx-en-Velin La Soie",lat:45.76145,lon:4.92213},{nom:"Vaulx-en-Velin La Soie",lat:45.76098,lon:4.9222},{nom:"Vaulx-en-Velin La Soie",lat:45.76144,lon:4.9234},{nom:"Décines Roosevelt",lat:45.76431,lon:4.93699},{nom:"Décines Roosevelt",lat:45.76519,lon:4.93841},{nom:"Décines Centre",lat:45.77048,lon:4.95668},{nom:"Décines Centre",lat:45.77182,lon:4.95594},{nom:"Décines Esplanade",lat:45.77255,lon:4.97426},{nom:"Décines Grand Large",lat:45.77469,lon:4.97594},{nom:"Meyzieu Gare",lat:45.7714,lon:4.99873},{nom:"Meyzieu Ch. De Gaulle",lat:45.76652,lon:5.00471},{nom:"Meyzieu Lycée Beltrame",lat:45.76963,lon:5.01209},{nom:"Meyzieu Lycée Beltrame",lat:45.76979,lon:5.01419},{nom:"Meyzieu Z.i.",lat:45.76801,lon:5.0313},{nom:"Meyzieu Z.i.",lat:45.76763,lon:5.03155},{nom:"Meyzieu les Panettes",lat:45.76614,lon:5.03497}];
 const RESEAU_T3_R=[{nom:"Décines Grand Large",lat:45.77476,lon:4.97599},{nom:"Décines Esplanade",lat:45.77237,lon:4.97458},{nom:"Décines Centre",lat:45.77057,lon:4.95684},{nom:"Décines Centre",lat:45.77187,lon:4.95586},{nom:"Décines Roosevelt",lat:45.76519,lon:4.93841},{nom:"Décines Roosevelt",lat:45.76446,lon:4.9369},{nom:"Vaulx-en-Velin La Soie",lat:45.76144,lon:4.9234},{nom:"Vaulx-en-Velin La Soie",lat:45.76114,lon:4.92211},{nom:"Vaulx-en-Velin La Soie",lat:45.76064,lon:4.9211},{nom:"Bel Air - Les Brosses",lat:45.75847,lon:4.91045},{nom:"Bel Air - Les Brosses",lat:45.75819,lon:4.90945},{nom:"Gare de Villeurbanne",lat:45.75591,lon:4.89162},{nom:"Montchat Place Ronde",lat:45.75425,lon:4.88984},{nom:"Reconnaissance - Balzac",lat:45.75459,lon:4.88506},{nom:"Dauphiné -Lacassagne",lat:45.75298,lon:4.86884},{nom:"Gare Part-Dieu Villette",lat:45.7608,lon:4.86197},{nom:"Gare Part-Dieu Villette",lat:45.76128,lon:4.86197}];
-const RESEAU_T4_A=[
-  {nom:"La Doua - Gaston Berger",lat:45.78156,lon:4.8721},
-  {nom:"Université Lyon 1",lat:45.78091,lon:4.86628},
-  {nom:"Condorcet",lat:45.77792,lon:4.86691},
-  {nom:"Le Tonkin",lat:45.77413,lon:4.86406},
-  {nom:"Charpennes Charles Hernu",lat:45.77103,lon:4.863},
-  {nom:"Collège Bellecombe",lat:45.76666,lon:4.86187},
-  {nom:"Thiers - Lafayette",lat:45.76433,lon:4.86197},
-  {nom:"Gare Part-Dieu Villette",lat:45.7608,lon:4.86193},
-  {nom:"Archives Departementales",lat:45.75435,lon:4.86175},
-  {nom:"Manufacture Montluc",lat:45.75015,lon:4.8603},
-  {nom:"Lycee Colbert",lat:45.7456,lon:4.85899},
-  {nom:"Jet d'Eau - M. France",lat:45.74006,lon:4.85911},
-  {nom:"Lycée Lumière",lat:45.73679,lon:4.86175},
-  {nom:"Etats-Unis Tony Garnier",lat:45.73297,lon:4.86474},
-  {nom:"Beauvisage CISL",lat:45.72978,lon:4.86722},
-  {nom:"Etats-Unis Viviani",lat:45.72487,lon:4.87104},
-  {nom:"Joliot-Curie - M. Sembat",lat:45.71548,lon:4.87836},
-  {nom:"La Borelle",lat:45.71111,lon:4.88212},
-  {nom:"Gare de Vénissieux",lat:45.70567,lon:4.88767},
-  {nom:"Croizat - Paul Bert",lat:45.70007,lon:4.88758},
-  {nom:"M. Houël Hôtel de Ville",lat:45.69655,lon:4.88457},
-  {nom:"Lycée Jacques Brel",lat:45.69495,lon:4.87985},
-  {nom:"Herriot - Cagne",lat:45.69379,lon:4.87553},
-  {nom:"Venissy Frida Kahlo",lat:45.69601,lon:4.87205},
-  {nom:"Division Leclerc",lat:45.69844,lon:4.86824},
-  {nom:"Maurice Thorez",lat:45.69989,lon:4.8633},
-  {nom:"Lenine - Corsiere",lat:45.69681,lon:4.8617},
-  {nom:"Darnaise",lat:45.69262,lon:4.86428},
-  {nom:"Hôp. Feyzin Vénissieux",lat:45.68824,lon:4.86511}
-];
-const RESEAU_T4_R=[
-  {nom:"Hôp. Feyzin Vénissieux",lat:45.68824,lon:4.86521},
-  {nom:"Darnaise",lat:45.69268,lon:4.86435},
-  {nom:"Lenine - Corsiere",lat:45.69687,lon:4.86178},
-  {nom:"Maurice Thorez",lat:45.69982,lon:4.86329},
-  {nom:"Division Leclerc",lat:45.69839,lon:4.86817},
-  {nom:"Venissy Frida Kahlo",lat:45.69595,lon:4.87198},
-  {nom:"Herriot - Cagne",lat:45.69374,lon:4.87545},
-  {nom:"Lycée Jacques Brel",lat:45.6949,lon:4.87993},
-  {nom:"M. Houël Hôtel de Ville",lat:45.69648,lon:4.88459},
-  {nom:"Croizat - Paul Bert",lat:45.70008,lon:4.88768},
-  {nom:"Gare de Vénissieux",lat:45.70567,lon:4.88782},
-  {nom:"La Borelle",lat:45.71117,lon:4.88219},
-  {nom:"Joliot-Curie - M. Sembat",lat:45.71553,lon:4.87845},
-  {nom:"Etats-Unis Viviani",lat:45.72491,lon:4.87114},
-  {nom:"Beauvisage CISL",lat:45.72982,lon:4.86732},
-  {nom:"Etats-Unis Tony Garnier",lat:45.73301,lon:4.86483},
-  {nom:"Lycée Lumière",lat:45.73683,lon:4.86185},
-  {nom:"Jet d'Eau - M. France",lat:45.7401,lon:4.85921},
-  {nom:"Lycee Colbert",lat:45.74559,lon:4.85902},
-  {nom:"Manufacture Montluc",lat:45.75015,lon:4.86034},
-  {nom:"Archives Departementales",lat:45.75435,lon:4.86179},
-  {nom:"Gare Part-Dieu Villette",lat:45.76128,lon:4.86197}
-];
+const RESEAU_T4_A=[{nom:"Hôp. Feyzin Vénissieux",lat:45.68824,lon:4.86511},{nom:"Darnaise",lat:45.69262,lon:4.86428},{nom:"Lenine - Corsiere",lat:45.69681,lon:4.8617},{nom:"Maurice Thorez",lat:45.69989,lon:4.8633},{nom:"Division Leclerc",lat:45.69844,lon:4.86824},{nom:"Venissy Frida Kahlo",lat:45.69601,lon:4.87205},{nom:"Herriot - Cagne",lat:45.69379,lon:4.87553},{nom:"Lycée Jacques Brel",lat:45.69495,lon:4.87985},{nom:"M. Houël Hôtel de Ville",lat:45.69655,lon:4.88457},{nom:"Croizat - Paul Bert",lat:45.70007,lon:4.88757},{nom:"Gare de Vénissieux",lat:45.70567,lon:4.88767},{nom:"La Borelle",lat:45.71111,lon:4.88212},{nom:"Joliot-Curie - M. Sembat",lat:45.71548,lon:4.87836},{nom:"Etats-Unis Viviani",lat:45.72487,lon:4.87104},{nom:"Beauvisage CISL",lat:45.72978,lon:4.86722},{nom:"Etats-Unis Tony Garnier",lat:45.73297,lon:4.86474},{nom:"Lycée Lumière",lat:45.73679,lon:4.86175},{nom:"Jet d'Eau - M. France",lat:45.74006,lon:4.85911},{nom:"Lycee Colbert",lat:45.7456,lon:4.85899},{nom:"Manufacture Montluc",lat:45.75015,lon:4.8603},{nom:"Archives Departementales",lat:45.75435,lon:4.86175},{nom:"Part-Dieu Villette Sud",lat:45.75666,lon:4.8619},{nom:"Gare Part-Dieu Villette",lat:45.7608,lon:4.86193},{nom:"Thiers - Lafayette",lat:45.76433,lon:4.86197},{nom:"Collège Bellecombe",lat:45.76666,lon:4.86187},{nom:"Charpennes Charles Hernu",lat:45.77103,lon:4.863},{nom:"Le Tonkin",lat:45.77413,lon:4.86406},{nom:"Condorcet",lat:45.77792,lon:4.86691},{nom:"Université Lyon 1",lat:45.78091,lon:4.86628},{nom:"La Doua - Gaston Berger",lat:45.78156,lon:4.8721}];
+const RESEAU_T4_R=[{nom:"Hôp. Feyzin Vénissieux",lat:45.68824,lon:4.86521},{nom:"Darnaise",lat:45.69268,lon:4.86435},{nom:"Lenine - Corsiere",lat:45.69687,lon:4.86178},{nom:"Maurice Thorez",lat:45.69982,lon:4.86329},{nom:"Division Leclerc",lat:45.69839,lon:4.86817},{nom:"Venissy Frida Kahlo",lat:45.69595,lon:4.87198},{nom:"Herriot - Cagne",lat:45.69374,lon:4.87545},{nom:"Lycée Jacques Brel",lat:45.6949,lon:4.87993},{nom:"M. Houël Hôtel de Ville",lat:45.69648,lon:4.88459},{nom:"Croizat - Paul Bert",lat:45.70008,lon:4.88768},{nom:"Gare de Vénissieux",lat:45.70567,lon:4.88781},{nom:"La Borelle",lat:45.71117,lon:4.88219},{nom:"Joliot-Curie - M. Sembat",lat:45.71553,lon:4.87845},{nom:"Etats-Unis Viviani",lat:45.72491,lon:4.87114},{nom:"Beauvisage CISL",lat:45.72981,lon:4.86732},{nom:"Etats-Unis Tony Garnier",lat:45.73301,lon:4.86483},{nom:"Lycée Lumière",lat:45.73683,lon:4.86185},{nom:"Jet d'Eau - M. France",lat:45.7401,lon:4.85921},{nom:"Lycee Colbert",lat:45.74559,lon:4.85902},{nom:"Manufacture Montluc",lat:45.75015,lon:4.86034},{nom:"Archives Departementales",lat:45.75435,lon:4.86179},{nom:"Gare Part-Dieu Villette",lat:45.7608,lon:4.86197},{nom:"Gare Part-Dieu Villette",lat:45.76128,lon:4.86197},{nom:"Thiers - Lafayette",lat:45.76433,lon:4.86208},{nom:"Collège Bellecombe",lat:45.76666,lon:4.86197},{nom:"Charpennes Charles Hernu",lat:45.77086,lon:4.86307},{nom:"Le Tonkin",lat:45.77405,lon:4.86405},{nom:"Condorcet",lat:45.77792,lon:4.86695},{nom:"Université Lyon 1",lat:45.78084,lon:4.86631},{nom:"La Doua - Gaston Berger",lat:45.78149,lon:4.87207}];
 const RESEAU_T5_A=[
   {nom:"Grange Blanche",lat:45.74246,lon:4.87932},
   {nom:"Ambroise Paré",lat:45.74149,lon:4.8839},
@@ -1874,31 +1781,8 @@ const RESEAU_T5_R=[
   {nom:"Ambroise Paré",lat:45.74156,lon:4.88395},
   {nom:"Grange Blanche",lat:45.74251,lon:4.87951}
 ];
-const RESEAU_T6_A=[
-  {nom:"Debourg",lat:45.73117,lon:4.8346},
-  {nom:"Challemel Lacour Artill.",lat:45.72968,lon:4.84353},
-  {nom:"Moulin à Vent",lat:45.72955,lon:4.85317},
-  {nom:"Petite Guille",lat:45.73106,lon:4.85891},
-  {nom:"Beauvisage - Pressensé",lat:45.72773,lon:4.86275},
-  {nom:"Beauvisage CISL",lat:45.72919,lon:4.86707},
-  {nom:"Grange Rouge - Santy",lat:45.73135,lon:4.8734},
-  {nom:"Mermoz - Californie",lat:45.73308,lon:4.87848},
-  {nom:"Mermoz - Moselle",lat:45.73223,lon:4.88241},
-  {nom:"Mermoz - Pinel",lat:45.73079,lon:4.88684}
-];
-const RESEAU_T6_R=[
-  {nom:"Essarts - Laennec",lat:45.73552,lon:4.88994},
-  {nom:"Mermoz - Pinel",lat:45.73083,lon:4.8868},
-  {nom:"Mermoz - Moselle",lat:45.73243,lon:4.88192},
-  {nom:"Mermoz - Californie",lat:45.7331,lon:4.87844},
-  {nom:"Grange Rouge - Santy",lat:45.73137,lon:4.87335},
-  {nom:"Beauvisage CISL",lat:45.72924,lon:4.86701},
-  {nom:"Beauvisage - Pressensé",lat:45.72778,lon:4.86268},
-  {nom:"Petite Guille",lat:45.73108,lon:4.85884},
-  {nom:"Moulin à Vent",lat:45.72957,lon:4.85309},
-  {nom:"Challemel Lacour Artill.",lat:45.72971,lon:4.84358},
-  {nom:"Debourg",lat:45.73119,lon:4.83462}
-];
+const RESEAU_T6_A=[{nom:"Beauvisage - Pressensé",lat:45.72773,lon:4.86275},{nom:"Beauvisage CISL",lat:45.72919,lon:4.86707},{nom:"Grange Rouge - Santy",lat:45.73135,lon:4.8734},{nom:"Mermoz - Californie",lat:45.73308,lon:4.87848},{nom:"Mermoz - Moselle",lat:45.73223,lon:4.88241},{nom:"Mermoz - Pinel",lat:45.73079,lon:4.88684},{nom:"Mermoz - Pinel",lat:45.73112,lon:4.88796},{nom:"Essarts - Laennec",lat:45.73555,lon:4.89},{nom:"Desgenettes",lat:45.73958,lon:4.89245},{nom:"Vinatier",lat:45.74254,lon:4.89413},{nom:"Hôpitaux Est - Pinel",lat:45.7475,lon:4.89679},{nom:"Kimmerling - Genêts",lat:45.75243,lon:4.89801},{nom:"Gare de Villeurbanne",lat:45.75521,lon:4.89119},{nom:"Grandclément",lat:45.75907,lon:4.88823},{nom:"Saint-Exupéry - Jaurès",lat:45.75801,lon:4.88159},{nom:"Verlaine - Tolstoï",lat:45.76233,lon:4.88076},{nom:"Hôtel de Ville - TNP",lat:45.76599,lon:4.8803},{nom:"Gratte-Ciel",lat:45.76888,lon:4.88026},{nom:"Geneviève de Gaulle",lat:45.77229,lon:4.87909},{nom:"Roger Planchon",lat:45.77645,lon:4.87705},{nom:"La Doua - Gaston Berger",lat:45.77983,lon:4.87203}];
+const RESEAU_T6_R=[{nom:"Beauvisage - Pressensé",lat:45.72778,lon:4.86268},{nom:"Beauvisage CISL",lat:45.72924,lon:4.86701},{nom:"Grange Rouge - Santy",lat:45.73137,lon:4.87335},{nom:"Mermoz - Californie",lat:45.7331,lon:4.87844},{nom:"Mermoz - Moselle",lat:45.73243,lon:4.88192},{nom:"Mermoz - Pinel",lat:45.73083,lon:4.8868},{nom:"Mermoz - Pinel",lat:45.73112,lon:4.88796},{nom:"Essarts - Laennec",lat:45.73552,lon:4.88993},{nom:"Desgenettes",lat:45.73955,lon:4.89238},{nom:"Vinatier",lat:45.74252,lon:4.89406},{nom:"Hôpitaux Est - Pinel",lat:45.74751,lon:4.89675},{nom:"Kimmerling - Genêts",lat:45.75244,lon:4.89797},{nom:"Gare de Villeurbanne",lat:45.75521,lon:4.89115},{nom:"Grandclément",lat:45.75905,lon:4.88824},{nom:"Saint-Exupéry - Jaurès",lat:45.75798,lon:4.88158},{nom:"Verlaine - Tolstoï",lat:45.76156,lon:4.8808},{nom:"Hôtel de Ville - TNP",lat:45.76599,lon:4.88025},{nom:"Gratte-Ciel",lat:45.76979,lon:4.88033},{nom:"Geneviève de Gaulle",lat:45.77229,lon:4.87905},{nom:"Roger Planchon",lat:45.77643,lon:4.87702},{nom:"La Doua - Gaston Berger",lat:45.77982,lon:4.87198}];
 const RESEAU_T7_A=[
   {nom:"Vaulx-en-Velin La Soie",lat:45.76144,lon:4.9234},
   {nom:"Décines Roosevelt",lat:45.76519,lon:4.93841},
@@ -2410,15 +2294,10 @@ function bonusLigne(cle){
 // Cache du graphe : construit une seule fois par combinaison de modes
 let _grapheCache=null;
 let _grapheCacheKey=null;
-// ---- Variables PMR — déclarées ici car utilisées dans construireGraphe ----
+// Arrêts accessibles PMR : tram T1-T7 (plancher bas intégral) + stations métro avec ascenseur
+// Source : champ ascenseur=True et desserte T1-T7 dans tclarret Grand Lyon
 let modePMR=false;
-const ARRETS_ASCENSEUR=new Set([
-  "Vaulx-en-Velin La Soie","Guillotière Gabriel Péri","Bellecour","Gorge de Loup","Valmy",
-  "Gare de Vénissieux","Gare de Vaise-G.Collomb","Laurent Bonnevay","Debourg","Perrache",
-  "Oullins Centre","Gare d'Oullins","Saxe - Gambetta","Part-Dieu Auditorium",
-  "Charpennes Charles Hernu","Croix-Luizet","Cuire","Hénon","Gare Part-Dieu Villette",
-  "Vieux Lyon Cat. St-Jean","Ampère - Victor Hugo","Cordeliers","Hôtel de Ville L. Pradel"
-]);
+const ARRETS_ASCENSEUR=new Set(["Alfred de Vigny","Ambroise Paré","Archives Departementales","Bachut - Mairie du 8ème","Beauvisage - Pressensé","Beauvisage CISL","Bel Air - Les Brosses","Bellecour","Boutasse - C. Rousset","Bron Hôtel de Ville","Centre Berthelot","Challemel Lacour Artill.","Charpennes Charles Hernu","Chassieu ZAC du Chêne","Chorel","Collège Bellecombe","Condorcet","Cordière","Croix-Luizet","Croix-Rousse","Croizat - Paul Bert","Darnaise","Dauphiné -Lacassagne","De Tassigny - Curial","Debourg","Desgenettes","Division Leclerc","Décines Centre","Décines Esplanade","Décines Grand Large","Décines OL Vallée","Décines Roosevelt","ENS Lyon","Esplanade des Arts","Essarts - Iris","Essarts - Laennec","Etats-Unis Tony Garnier","Etats-Unis Viviani","Eurexpo Entrée Princ.","Europe - Université","Gare Part-Dieu V.Merle","Gare Part-Dieu Villette","Gare de Vaise-G.Collomb","Gare de Villeurbanne","Gare de Vénissieux","Garibaldi","Garibaldi - Berthelot","Geneviève de Gaulle","Gorge de Loup","Grandclément","Grange Blanche","Grange Rouge - Santy","Gratte-Ciel","Guillotière Gabriel Péri","Halle Tony Garnier","Hauts de Feuilly","Herriot - Cagne","Hénon","Hôp. Feyzin Vénissieux","Hôpitaux Est - Pinel","Hôtel Région Montrochet","Hôtel de Ville - TNP","Hôtel de Ville L. Pradel","INSA - Einstein","IUT Feyssine","Jean Macé","Jean XXIII - M. Bastié","Jet d'Eau - M. France","Joliot-Curie - M. Sembat","Kimmerling - Genêts","La Borelle","La Doua","La Doua - Gaston Berger","Laennec","Le Tonkin","Lenine - Corsiere","Les Alizés","Liberté","Lycee Colbert","Lycee J.P. Sartre","Lycée Jacques Brel","Lycée Lumière","M. Houël Hôtel de Ville","Manufacture Montluc","Maurice Thorez","Mermoz - Californie","Mermoz - Moselle","Mermoz - Pinel","Meyzieu Ch. De Gaulle","Meyzieu Gare","Meyzieu Lycée Beltrame","Meyzieu Z.i.","Meyzieu les Panettes","Monplaisir Lumière","Montchat Place Ronde","Moulin à Vent","Musée des Confluences","Palais Justice Mairie 3e","Parc Technologique","Parc du Chêne","Parilly","Parilly - Université","Part-Dieu Auditorium","Part-Dieu Villette Sud","Perrache","Petite Guille","Place Jean Jaurès","Place des Archives","Porte des Alpes","Quai Claude Bernard","Rebufer","Reconnaissance - Balzac","Roger Planchon","Route de Vienne","Rue de l'Université","Saint-André","Saint-Exupéry - Jaurès","Saint-Priest Bel Air","Saint-Priest Jules Ferry","Sainte-Blandine","Salvador Allende","Sans Souci","Saxe - Gambetta","Saxe - Préfecture","St-Priest Hôtel de Ville","Thiers - Lafayette","Université Lyon 1","Valmy","Vaulx-en-Velin La Soie","Venissy Frida Kahlo","Verlaine - Tolstoï","Vieux Lyon Cat. St-Jean","Villon","Vinatier"]);
 // -------------------------------------------------------------------------
 function construireGraphe(modesTCL){
   const key=JSON.stringify(modesTCL);
@@ -3033,6 +2912,29 @@ async function chercher(){
     afficherItineraire(options[0]);
     // Sauvegarder dans l'historique
     sauvegarderHistorique(document.getElementById("input-depart").value, document.getElementById("input-dest").value, coordDepart, coordDest);
+
+    // Message d'aide si aucun TCL trouvé ou résultat uniquement piéton
+    const aucunTCL=options.every(o=>o.type==="marche"||!o.etapes.some(e=>e.ligne));
+    if(aucunTCL){
+      const aide=document.getElementById("aide-recherche");
+      if(aide){
+        aide.style.display="block";
+        aide.innerHTML=`
+          <div style="background:#f0f4ff;border:1.5px solid #b0c0e0;border-radius:10px;padding:12px 14px;margin-top:12px;font-size:13px">
+            <div style="font-weight:700;color:#1a3a6e;margin-bottom:6px">💡 Aucun transport disponible — que faire ?</div>
+            <ul style="margin:0;padding-left:18px;color:#2c3e70;line-height:1.8">
+              <li>Essayez le profil <strong>Bus</strong> — les Chrono desservent plus de zones</li>
+              <li>Essayez <strong>Peu marcher</strong> pour trouver l'arrêt le plus proche</li>
+              <li>Modifiez légèrement votre <strong>point de départ ou d'arrivée</strong> (quelques rues)</li>
+              <li>Consultez le <a href="https://www.tcl.fr/se-deplacer/plan-du-reseau" target="_blank" rel="noopener noreferrer" style="color:var(--bordeaux);font-weight:600">plan du réseau TCL</a> pour identifier la ligne la plus proche</li>
+              <li>Si la zone est peu desservie, utilisez <a href="https://www.tcl.fr/services/services-a-la-demande" target="_blank" rel="noopener noreferrer" style="color:var(--bordeaux);font-weight:600">TCL à la demande</a></li>
+            </ul>
+          </div>`;
+      }
+    } else {
+      const aide=document.getElementById("aide-recherche");
+      if(aide) aide.style.display="none";
+    }
   }catch(e){showEtat("Erreur : "+e.message,"err");}
   finally{btn.disabled=false;btn.textContent="Trouver mon itinéraire →";}
 }
@@ -3245,20 +3147,20 @@ function afficherItineraire(iti){
       <div style="font-size:13px;font-weight:700;color:#8B4500;margin-bottom:4px">🚕 Trajet > 2 km — Commander un véhicule ?</div>
       <div style="font-size:12px;color:#7a6a5a;margin-bottom:10px">Aucun transport en commun disponible à proximité pour ce trajet.</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px">
-        <a href="https://www.uber.com/fr/fr/ride/?pickup=${depEncoded}&dropoff=${destEncoded}" target="_blank" rel="noopener noreferrer"
+        <a href="https://m.uber.com/ul/?action=setPickup&pickup[latitude]=${coordDepart.lat}&pickup[longitude]=${coordDepart.lon}&dropoff[latitude]=${coordDest.lat}&dropoff[longitude]=${coordDest.lon}" target="_blank" rel="noopener noreferrer"
            style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:#000;border-radius:8px;text-decoration:none">
           <span style="font-size:20px">🚗</span>
           <span style="font-size:11px;font-weight:700;color:#fff">Uber</span>
         </a>
-        <a href="https://bolt.eu/fr-fr/ride/?pickup_lat=${coordDepart.lat}&pickup_lng=${coordDepart.lon}&destination_lat=${coordDest.lat}&destination_lng=${coordDest.lon}" target="_blank" rel="noopener noreferrer"
+        <a href="https://bolt.onelink.me/gy9P?af_dp=bolt%3A%2F%2F&af_web_dp=https%3A%2F%2Fbolt.eu%2Ffr-fr%2F" target="_blank" rel="noopener noreferrer"
            style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:#34d186;border-radius:8px;text-decoration:none">
           <span style="font-size:20px">⚡</span>
           <span style="font-size:11px;font-weight:700;color:#fff">Bolt</span>
         </a>
-        <a href="tel:+33972707070" rel="noopener noreferrer"
-           style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:#1a237e;border-radius:8px;text-decoration:none">
-          <span style="font-size:20px">📞</span>
-          <span style="font-size:11px;font-weight:700;color:#fff">Taxis</span>
+        <a href="https://g7.app.link/ride" target="_blank" rel="noopener noreferrer"
+           style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;background:#f5c300;border-radius:8px;text-decoration:none">
+          <span style="font-size:20px">🟡</span>
+          <span style="font-size:11px;font-weight:700;color:#1a1a1a">G7 Taxi</span>
         </a>
       </div>
     </div>`;
