@@ -2811,7 +2811,7 @@ async function chercher(){
     const dottActif=modes.dott&&!modePMR;
     const[velov,dott,dottStations]=await Promise.all([velovActif?getVelov():Promise.resolve([]),dottActif?getDott():Promise.resolve([]),dottActif?getDottStations():Promise.resolve([])]);
     const options=await calculerItineraires(coordDepart.lat,coordDepart.lon,coordDest.lat,coordDest.lon,velov,dott,dottStations);
-    if(priorite==="marche"){afficherItineraire(options.find(o=>o.type==="marche")||options[0]);hideEtat();return;}
+    if(priorite==="marche"){itinerairesCalcules=options;afficherItineraire(options.find(o=>o.type==="marche")||options[0]);hideEtat();return;}
 
     // Mode "Peu marcher" : retrier les options par marche totale minimale (accès + fin)
     if(priorite==="min-marche"){
